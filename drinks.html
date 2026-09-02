@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#ef7eae" />
+  <title>Drinks – World Food Festival Kassenrechner</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="cashier-page">
+  <header class="cashier-header">
+    <a class="back-link" href="index.html" aria-label="Zurück zur Standauswahl">←</a>
+    <a class="mini-brand" href="index.html" aria-label="World Food Festival">WFF <span>26</span></a>
+    <div>
+      <span class="eyebrow">KASSENRECHNER</span>
+      <h1>Drinks</h1>
+    </div>
+  </header>
+
+  <main class="cashier-layout">
+    <section class="catalog-panel">
+      <div class="category-tabs" id="categoryTabs" aria-label="Getränkekategorien"></div>
+      <div id="productGroups" class="product-groups"></div>
+    </section>
+
+    <aside class="cart-panel" aria-label="Bestellung">
+      <div class="cart-head">
+        <div>
+          <span class="eyebrow">AKTUELLE BESTELLUNG</span>
+          <h2>Warenkorb</h2>
+        </div>
+        <button class="text-button" id="clearCart" type="button">Leeren</button>
+      </div>
+
+      <div id="cartItems" class="cart-items">
+        <div class="empty-state">Noch nichts ausgewählt.</div>
+      </div>
+
+      <div class="discount-box">
+        <button id="studentDiscount" class="discount-button" type="button" aria-pressed="false">
+          <span>🎓 Studentenrabatt</span>
+          <strong>−25 %</strong>
+        </button>
+        <small>Einmal auf die komplette Bestellung anwenden.</small>
+      </div>
+
+      <div class="totals">
+        <div><span>Zwischensumme</span><strong id="subtotal">0,00 €</strong></div>
+        <div id="discountRow" class="discount-row hidden"><span>Studentenrabatt −25 %</span><strong id="discountValue">−0,00 €</strong></div>
+        <div class="grand-total"><span>Gesamt</span><strong id="total">0,00 €</strong></div>
+      </div>
+
+      <button class="new-order" id="newOrder" type="button">Neue Bestellung</button>
+    </aside>
+  </main>
+
+  <div class="mobile-total-bar">
+    <div>
+      <span>Gesamt</span>
+      <strong id="mobileTotal">0,00 €</strong>
+    </div>
+    <button id="mobileCartButton" type="button">Bestellung <span id="mobileCount">0</span></button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
