@@ -7,65 +7,86 @@
   <title>Drinks – World Food Festival Kassenrechner</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="deposit.css" />
+  <link rel="stylesheet" href="mobile-pos.css" />
 </head>
 <body class="cashier-page">
   <header class="cashier-header">
-    <a class="back-link" href="index.html" aria-label="Zurück zur Standauswahl">←</a>
-    <a class="mini-brand" href="index.html" aria-label="World Food Festival">WFF <span>26</span></a>
-    <div>
+    <a class="back-link guard-order-exit" href="index.html" aria-label="Zurück zur Standauswahl">←</a>
+    <a class="mini-brand guard-order-exit" href="index.html" aria-label="World Food Festival">WFF <span>26</span></a>
+    <div class="cashier-title">
       <span class="eyebrow">KASSENRECHNER</span>
       <h1>Drinks</h1>
     </div>
   </header>
 
   <main class="cashier-layout">
-    <section class="catalog-panel">
+    <section class="catalog-panel" aria-label="Getränke auswählen">
       <div class="category-tabs" id="categoryTabs" aria-label="Getränkekategorien"></div>
       <div id="productGroups" class="product-groups"></div>
     </section>
 
-    <aside class="cart-panel" aria-label="Bestellung">
+    <button class="checkout-backdrop" id="checkoutBackdrop" type="button" aria-label="Checkout schließen"></button>
+
+    <aside class="cart-panel" aria-label="Bestellung prüfen">
+      <div class="sheet-handle" aria-hidden="true"></div>
+
       <div class="cart-head">
         <div>
-          <span class="eyebrow">AKTUELLE BESTELLUNG</span>
-          <h2>Warenkorb</h2>
+          <span class="eyebrow">SCHRITT 2 VON 2</span>
+          <h2>Bestellung prüfen</h2>
         </div>
-        <button class="text-button" id="clearCart" type="button">Leeren</button>
+        <button class="cart-close" id="checkoutClose" type="button" aria-label="Checkout schließen">×</button>
       </div>
 
       <div id="cartItems" class="cart-items">
-        <div class="empty-state">Noch nichts ausgewählt.</div>
+        <div class="empty-state"><strong>Noch keine Auswahl.</strong><span>Tippe auf ein Produkt.</span></div>
       </div>
 
       <div class="discount-box">
         <button id="studentDiscount" class="discount-button" type="button" aria-pressed="false">
-          <span>🎓 Studentenrabatt</span>
+          <span>Studentenrabatt</span>
           <strong>−25 %</strong>
         </button>
-        <small>25 % auf Getränke. Pfand bleibt vom Rabatt ausgeschlossen.</small>
+        <small>Pfand ist vom Rabatt ausgeschlossen.</small>
       </div>
 
-      <div class="totals">
-        <div><span>Zwischensumme</span><strong id="subtotal">0,00 €</strong></div>
-        <div id="discountRow" class="discount-row hidden"><span>Studentenrabatt −25 %</span><strong id="discountValue">−0,00 €</strong></div>
+      <div class="totals" aria-label="Bestellsumme">
+        <div><span>Produkte</span><strong id="productSubtotal">0,00 €</strong></div>
+        <div><span>Pfand</span><strong id="depositSubtotal">0,00 €</strong></div>
+        <div id="discountRow" class="discount-row hidden"><span>Studentenrabatt</span><strong id="discountValue">−0,00 €</strong></div>
         <div class="grand-total"><span>Gesamt</span><strong id="total">0,00 €</strong></div>
       </div>
 
-      <div class="checkout-actions" aria-label="Bestellung abschließen">
-        <button class="checkout-button cancel" id="cancelOrder" type="button">Cancel</button>
-        <button class="checkout-button cash" id="payCash" type="button">Bar</button>
-        <button class="checkout-button card" id="payCard" type="button">Karte</button>
+      <div class="checkout-footer">
+        <div class="checkout-step">
+          <strong>Zahlungsart wählen</strong>
+          <span>Damit wird die Bestellung gespeichert.</span>
+        </div>
+        <div class="checkout-actions" aria-label="Bestellung abschließen">
+          <button class="checkout-button cash" id="payCash" type="button">
+            <strong>Bar</strong>
+            <span>Barzahlung</span>
+          </button>
+          <button class="checkout-button card" id="payCard" type="button">
+            <strong>Karte</strong>
+            <span>Kartenzahlung</span>
+          </button>
+        </div>
+        <button class="checkout-button cancel" id="cancelOrder" type="button">Bestellung stornieren</button>
       </div>
-      <small class="tracking-note">Bar und Karte werden als Umsatz gespeichert. Cancel wird als stornierte Bestellung erfasst.</small>
     </aside>
   </main>
 
-  <div class="mobile-total-bar">
-    <div>
-      <span>Gesamt</span>
+  <div class="mobile-total-bar" aria-label="Bestellung öffnen">
+    <div class="mobile-total-summary">
+      <span id="mobileItemLabel">0 Artikel</span>
       <strong id="mobileTotal">0,00 €</strong>
     </div>
-    <button id="mobileCartButton" type="button">Bestellung <span id="mobileCount">0</span></button>
+    <button id="mobileCartButton" type="button" disabled>
+      <span>Prüfen</span>
+      <strong>→</strong>
+      <i id="mobileCount" aria-hidden="true">0</i>
+    </button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
