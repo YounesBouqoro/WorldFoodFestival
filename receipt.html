@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f4ec" />
+  <title>Beleg – World Food Festival</title>
+  <link rel="stylesheet" href="receipt.css" />
+</head>
+<body>
+  <main class="receipt-shell">
+    <div class="receipt-toolbar no-print">
+      <button type="button" id="printReceipt">Drucken / PDF</button>
+    </div>
+    <article class="receipt-paper" id="receiptPaper" aria-live="polite">
+      <div class="receipt-loading">Beleg wird geladen …</div>
+    </article>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="receipt.js"></script>
+</body>
+</html>
