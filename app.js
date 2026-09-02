@@ -1,3 +1,5 @@
+const DEPOSIT_PRICE = 2.0;
+
 const categories = [
   {
     name: 'Softdrinks', size: '0,33 l', products: [
@@ -31,8 +33,8 @@ const categories = [
     ]
   },
   {
-    name: 'Pfand', size: 'Glas & Flaschen', products: [
-      ['Pfand', 2.0, 'deposit'], ['Pfand Rückgabe', -2.0, 'refund']
+    name: 'Pfand Rückgabe', size: 'Glas & Flaschen', products: [
+      ['Pfand Rückgabe', -2.0, 'refund']
     ]
   }
 ];
@@ -65,9 +67,10 @@ function renderCatalog() {
       <h2>${category.name} <span>${category.size}</span></h2>
       <div class="product-grid">
         ${category.products.map(([name, price, type]) => `
-          <button class="product-button ${type || ''}" type="button" data-name="${name}" data-price="${price}">
+          <button class="product-button ${type || ''}" type="button" data-name="${name}" data-price="${price}" data-type="${type || 'drink'}">
             <span class="name">${name}</span>
             <span class="price">${price < 0 ? '−' : ''}${euro(Math.abs(price))}</span>
+            ${type !== 'refund' ? `<small class="deposit-hint">+ ${euro(DEPOSIT_PRICE)} Pfand automatisch</small>` : ''}
           </button>
         `).join('')}
       </div>
@@ -76,8 +79,8 @@ function renderCatalog() {
 
   productGroups.querySelectorAll('.product-button').forEach(button => {
     button.addEventListener('click', () => {
-      addItem(button.dataset.name, Number(button.dataset.price));
-      flash(button.dataset.name);
+      addItem(button.dataset.name, Number(button.dataset.price), button.dataset.type);
+      flash(button.dataset.type === 'refund' ? `${button.dataset.name} hinzugefügt` : `${button.dataset.name} + Pfand hinzugefügt`);
     });
   });
 
@@ -90,9 +93,11 @@ function renderCatalog() {
   });
 }
 
-function addItem(name, price) {
-  const existing = cart.get(name) || { name, price, qty: 0 };
+function addItem(name, price, type = 'drink') {
+  const isDrink = type !== 'refund';
+  const existing = cart.get(name) || { name, price, qty: 0, depositQty: 0, isDrink };
   existing.qty += 1;
+  if (existing.isDrink) existing.depositQty += 1;
   cart.set(name, existing);
   renderCart();
 }
@@ -100,9 +105,25 @@ function addItem(name, price) {
 function changeQty(name, delta) {
   const item = cart.get(name);
   if (!item) return;
-  item.qty += delta;
+
+  if (delta > 0) {
+    item.qty += 1;
+    if (item.isDrink) item.depositQty += 1;
+  } else {
+    item.qty -= 1;
+    if (item.isDrink) item.depositQty = Math.min(item.depositQty, Math.max(0, item.qty));
+  }
+
   if (item.qty <= 0) cart.delete(name);
   else cart.set(name, item);
+  renderCart();
+}
+
+function changeDeposit(name, delta) {
+  const item = cart.get(name);
+  if (!item || !item.isDrink) return;
+  item.depositQty = Math.max(0, Math.min(item.qty, item.depositQty + delta));
+  cart.set(name, item);
   renderCart();
 }
 
@@ -111,31 +132,59 @@ function renderCart() {
   if (!items.length) {
     cartItems.innerHTML = '<div class="empty-state">Noch nichts ausgewählt.</div>';
   } else {
-    cartItems.innerHTML = items.map(item => `
-      <div class="cart-line">
-        <div>
-          <div class="line-name">${item.name}</div>
-          <div class="cart-line-main">
-            <div class="qty-controls">
-              <button type="button" data-action="minus" data-name="${item.name}" aria-label="${item.name} verringern">−</button>
-              <strong>${item.qty}×</strong>
-              <button type="button" data-action="plus" data-name="${item.name}" aria-label="${item.name} erhöhen">+</button>
+    cartItems.innerHTML = items.map(item => {
+      const productTotal = item.price * item.qty;
+      const depositTotal = item.isDrink ? item.depositQty * DEPOSIT_PRICE : 0;
+      const lineTotal = productTotal + depositTotal;
+
+      return `
+        <div class="cart-line">
+          <div class="cart-product">
+            <div class="line-name">${item.name}</div>
+            <div class="cart-line-main">
+              <div class="qty-controls">
+                <button type="button" data-action="minus" data-name="${item.name}" aria-label="${item.name} verringern">−</button>
+                <strong>${item.qty}×</strong>
+                <button type="button" data-action="plus" data-name="${item.name}" aria-label="${item.name} erhöhen">+</button>
+              </div>
+              <small>${euro(item.price)} / Stück</small>
             </div>
-            <small>${euro(item.price)} / Stück</small>
+            ${item.isDrink ? `
+              <div class="deposit-row ${item.depositQty === 0 ? 'deposit-off' : ''}">
+                <div>
+                  <strong>Pfand</strong>
+                  <small>${euro(DEPOSIT_PRICE)} je Getränk · automatisch</small>
+                </div>
+                <div class="qty-controls deposit-controls">
+                  <button type="button" data-deposit-action="minus" data-name="${item.name}" aria-label="Pfand für ${item.name} entfernen" ${item.depositQty === 0 ? 'disabled' : ''}>−</button>
+                  <strong>${item.depositQty}×</strong>
+                  <button type="button" data-deposit-action="plus" data-name="${item.name}" aria-label="Pfand für ${item.name} hinzufügen" ${item.depositQty >= item.qty ? 'disabled' : ''}>+</button>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+          <div class="line-price">
+            ${euro(lineTotal)}
+            ${item.isDrink && depositTotal > 0 ? `<small>inkl. ${euro(depositTotal)} Pfand</small>` : ''}
           </div>
         </div>
-        <div class="line-price">${euro(item.price * item.qty)}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     cartItems.querySelectorAll('[data-action]').forEach(button => {
       button.addEventListener('click', () => changeQty(button.dataset.name, button.dataset.action === 'plus' ? 1 : -1));
     });
+
+    cartItems.querySelectorAll('[data-deposit-action]').forEach(button => {
+      button.addEventListener('click', () => changeDeposit(button.dataset.name, button.dataset.depositAction === 'plus' ? 1 : -1));
+    });
   }
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const productSubtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const depositSubtotal = items.reduce((sum, item) => sum + (item.isDrink ? item.depositQty * DEPOSIT_PRICE : 0), 0);
+  const subtotal = productSubtotal + depositSubtotal;
   const discountableSubtotal = items
-    .filter(item => item.name !== 'Pfand' && item.name !== 'Pfand Rückgabe')
+    .filter(item => item.isDrink)
     .reduce((sum, item) => sum + item.price * item.qty, 0);
   const discount = discountActive ? Math.max(0, discountableSubtotal) * 0.25 : 0;
   const total = subtotal - discount;
@@ -158,12 +207,12 @@ function resetOrder() {
   renderCart();
 }
 
-function flash(name) {
+function flash(message) {
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.textContent = `${name} hinzugefügt`;
+  toast.textContent = message;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 650);
+  setTimeout(() => toast.remove(), 850);
 }
 
 studentDiscount.addEventListener('click', () => {
