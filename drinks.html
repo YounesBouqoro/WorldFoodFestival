@@ -51,7 +51,12 @@
         <div class="grand-total"><span>Gesamt</span><strong id="total">0,00 €</strong></div>
       </div>
 
-      <button class="new-order" id="newOrder" type="button">Neue Bestellung</button>
+      <div class="checkout-actions" aria-label="Bestellung abschließen">
+        <button class="checkout-button cancel" id="cancelOrder" type="button">Cancel</button>
+        <button class="checkout-button cash" id="payCash" type="button">Bar</button>
+        <button class="checkout-button card" id="payCard" type="button">Karte</button>
+      </div>
+      <small class="tracking-note">Bar und Karte werden als Umsatz gespeichert. Cancel wird als stornierte Bestellung erfasst.</small>
     </aside>
   </main>
 
@@ -63,6 +68,7 @@
     <button id="mobileCartButton" type="button">Bestellung <span id="mobileCount">0</span></button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
