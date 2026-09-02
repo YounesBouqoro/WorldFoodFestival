@@ -2,7 +2,7 @@ const categories = [
   {
     name: 'Softdrinks', size: '0,33 l', products: [
       ['Fritz Kola', 4.0], ['Fritz Kola Zero', 4.0], ['Fritz Orange', 4.0], ['Fritz Zitrone', 4.0],
-      ['Fritz Bio-Apfelschorle', 4.5], ['Fritz Bio-Rhabarberschorle', 4.5], ['ClimAid Still', 3.5], ['ClimAid Sprudelnd', 3.5]
+      ['Fritz Bio-Apfelschorle', 4.5], ['Fritz Bio-Rhabarberschorle', 4.5], ['ClimAid Stil', 3.5], ['ClimAid Sprudelnd', 3.5]
     ]
   },
   {
@@ -134,7 +134,10 @@ function renderCart() {
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-  const discount = discountActive ? Math.max(0, subtotal) * 0.25 : 0;
+  const discountableSubtotal = items
+    .filter(item => item.name !== 'Pfand' && item.name !== 'Pfand Rückgabe')
+    .reduce((sum, item) => sum + item.price * item.qty, 0);
+  const discount = discountActive ? Math.max(0, discountableSubtotal) * 0.25 : 0;
   const total = subtotal - discount;
   const count = items.reduce((sum, item) => sum + item.qty, 0);
 
