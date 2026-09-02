@@ -4,15 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#ef7eae" />
-  <title>World Food Festival – Kassenrechner</title>
+  <title>World Food Festival – Kasse</title>
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .home-guide{margin-top:34px}
-    @media(max-width:820px){.home-guide{margin-top:22px}}
-  </style>
+  <link rel="stylesheet" href="access.css" />
 </head>
 <body>
-  <header class="topbar">
+  <header class="topbar app-topbar">
     <a class="brand" href="index.html" aria-label="World Food Festival Kassenrechner">
       <span class="brand-kicker">WORLD</span>
       <span class="brand-main">FOOD</span>
@@ -20,48 +17,54 @@
     </a>
     <div class="topbar-copy">
       <span class="eyebrow">KASSENRECHNER</span>
-      <strong>Stand auswählen</strong>
+      <strong id="homeHeadline">Anmelden</strong>
+    </div>
+    <div class="topbar-actions">
+      <a class="admin-link" href="admin.html">Admin</a>
+      <button class="cashier-chip hidden" id="cashierLogout" type="button" aria-label="Kassenbenutzer abmelden">
+        <span id="cashierName">–</span>
+        <strong>Abmelden</strong>
+      </button>
     </div>
   </header>
 
-  <main class="home-shell">
-    <section class="stand-grid" aria-label="Stände">
-      <a class="stand-card active" href="drinks.html">
-        <span class="stand-icon">🥤</span>
-        <span>
-          <strong>Drinks</strong>
-          <small>Getränke · jetzt verfügbar</small>
-        </span>
-        <span class="arrow">→</span>
-      </a>
-
-      <div class="stand-card disabled" aria-disabled="true">
-        <span class="stand-icon">🌮</span>
-        <span>
-          <strong>Food Stand 1</strong>
-          <small>folgt später</small>
-        </span>
-        <span class="soon">SOON</span>
-      </div>
-
-      <div class="stand-card disabled" aria-disabled="true">
-        <span class="stand-icon">🍔</span>
-        <span>
-          <strong>Food Stand 2</strong>
-          <small>folgt später</small>
-        </span>
-        <span class="soon">SOON</span>
-      </div>
+  <main class="home-shell access-shell">
+    <section class="login-card" id="cashierLoginCard" aria-labelledby="cashierLoginTitle">
+      <span class="login-kicker">KASSENZUGANG</span>
+      <h1 id="cashierLoginTitle">Dein 4-stelliger Code</h1>
+      <p>Damit wird jede Bestellung automatisch deinem Kassenbenutzer zugeordnet.</p>
+      <form id="cashierLoginForm" class="pin-form">
+        <label for="cashierPin">Kassen-Code</label>
+        <input id="cashierPin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" aria-describedby="loginMessage" required />
+        <button type="submit">Anmelden</button>
+        <div class="form-message" id="loginMessage" role="status"></div>
+      </form>
     </section>
 
-    <section class="hero-card home-guide">
-      <div>
-        <p class="eyebrow">WORLD FOOD FESTIVAL</p>
-        <h1>Schnell klicken.<br />Sauber kassieren.</h1>
-        <p>Wähle den Stand. Produkte werden standweise getrennt, damit die Kasse auch bei größerem Sortiment übersichtlich bleibt.</p>
-      </div>
-      <div class="festival-mark" aria-hidden="true">WFF<br><span>26</span></div>
-    </section>
+    <div id="posHome" class="hidden">
+      <section class="home-primary">
+        <div class="section-heading">
+          <span class="eyebrow">SCHRITT 1</span>
+          <h1>Stand auswählen</h1>
+          <p>Wähle den Bereich, an dem du kassierst.</p>
+        </div>
+        <section class="stand-grid" id="standGrid" aria-label="Stände">
+          <div class="stand-card disabled"><span class="stand-icon">…</span><span><strong>Stände werden geladen</strong></span></div>
+        </section>
+      </section>
+
+      <section class="hero-card home-guide">
+        <div>
+          <p class="eyebrow">SO FUNKTIONIERT'S</p>
+          <h2>Auswählen.<br />Prüfen. Kassieren.</h2>
+          <p>Produkt antippen, Bestellung prüfen und mit Bar oder Karte abschließen. Pfand wird automatisch ergänzt und kann im Checkout angepasst werden.</p>
+        </div>
+        <div class="festival-mark" aria-hidden="true">WFF<br><span>26</span></div>
+      </section>
+    </div>
   </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="index.js"></script>
 </body>
 </html>
