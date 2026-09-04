@@ -4,13 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#ef7eae" />
+  <meta name="application-name" content="WFF Kasse" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="WFF Kasse" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="app-icon.svg" type="image/svg+xml" />
   <title>Admin – World Food Festival Kasse</title>
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="pwa.css" />
 </head>
 <body>
   <header class="admin-topbar">
     <a href="index.html" class="admin-brand">WFF <span>26</span></a>
     <div><small>KASSENSYSTEM</small><strong>Admin</strong></div>
+    <button class="pwa-install-button" data-install-app type="button">App installieren</button>
     <button id="adminLogout" class="ghost hidden" type="button">Abmelden</button>
   </header>
 
@@ -31,6 +38,7 @@
       <nav class="admin-tabs" aria-label="Admin Bereiche">
         <button class="active" data-tab="cashiers" type="button">Benutzer</button>
         <button data-tab="devices" type="button">Geräte</button>
+        <button data-tab="stands" type="button">Stände</button>
         <button data-tab="products" type="button">Produkte</button>
         <button data-tab="analysis" type="button">Analyse</button>
         <button data-tab="settings" type="button">Belege</button>
@@ -65,23 +73,32 @@
         <div id="deviceList" class="admin-list"></div>
       </section>
 
-      <section class="admin-panel" data-panel="products">
+      <section class="admin-panel" data-panel="stands">
         <div class="panel-heading">
-          <div><small>SORTIMENT</small><h2>Stände & Produkte</h2></div>
-          <div class="heading-actions"><button type="button" id="newStand">+ Stand</button><button type="button" id="newProduct">+ Produkt</button></div>
+          <div><small>STÄNDE</small><h2>Stände verwalten</h2></div>
+          <button type="button" id="newStand">+ Neuer Stand</button>
         </div>
-
+        <p class="panel-intro">Neue Stände erscheinen automatisch in der Kasse, sobald sie aktiv sind und einem Kassenbenutzer zugewiesen wurden.</p>
         <form id="standForm" class="editor-card hidden">
-          <h3>Stand bearbeiten</h3>
+          <h3>Stand anlegen / bearbeiten</h3>
           <div class="grid-2">
-            <div class="field"><label for="standSlug">Slug</label><input id="standSlug" required placeholder="z. B. burger" /></div>
-            <div class="field"><label for="standName">Name</label><input id="standName" required /></div>
-            <div class="field"><label for="standIcon">Icon / Emoji</label><input id="standIcon" /></div>
+            <div class="field"><label for="standName">Standname</label><input id="standName" required placeholder="z. B. Burger Bros." /></div>
+            <div class="field"><label for="standIcon">Icon / Emoji</label><input id="standIcon" placeholder="🍔" /></div>
+            <div class="field"><label for="standSlug">Technischer Schlüssel</label><input id="standSlug" required placeholder="wird automatisch erzeugt" /></div>
             <div class="field"><label for="standSort">Reihenfolge</label><input id="standSort" type="number" value="0" /></div>
           </div>
           <label class="check"><input id="standActive" type="checkbox" checked /> Stand aktiv</label>
           <div class="form-actions"><button type="button" class="secondary" id="cancelStandEdit">Abbrechen</button><button type="submit">Stand speichern</button></div>
         </form>
+        <div id="standList" class="stand-admin-list stand-admin-grid"></div>
+      </section>
+
+      <section class="admin-panel" data-panel="products">
+        <div class="panel-heading">
+          <div><small>SORTIMENT</small><h2>Produkte verwalten</h2></div>
+          <button type="button" id="newProduct">+ Produkt</button>
+        </div>
+        <p class="panel-intro">Produkte werden immer einem Stand zugeordnet und erscheinen dort automatisch in der Kassenansicht.</p>
 
         <form id="productForm" class="editor-card hidden">
           <input type="hidden" id="productId" />
@@ -106,7 +123,6 @@
           <div class="form-actions"><button type="button" class="secondary" id="cancelProductEdit">Abbrechen</button><button type="submit">Produkt speichern</button></div>
         </form>
 
-        <div id="standList" class="stand-admin-list"></div>
         <div id="productList" class="admin-list product-admin-list"></div>
       </section>
 
@@ -161,5 +177,6 @@
   <div id="adminToast" class="admin-toast hidden" role="status"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="admin.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>
