@@ -158,7 +158,7 @@ function renderCart(){
     cartItems.querySelectorAll('[data-deposit-action]').forEach(b=>b.addEventListener('click',()=>changeDeposit(b.dataset.id,b.dataset.depositAction==='plus'?1:-1)));
   }
   const t=calculateTotals(items);productSubtotalEl.textContent=euro(t.productSubtotal);depositSubtotalEl.textContent=euro(t.depositSubtotal);discountValue.textContent='−'+euro(t.discount);discountRow.classList.toggle('hidden',!discountActive);totalEl.textContent=euro(t.total);mobileTotal.textContent=euro(t.total);mobileCount.textContent=t.count;mobileItemLabel.textContent=t.count+' Artikel';
-  const empty=!items.length;payCashButton.disabled=empty||checkoutBusy;payCardButton.disabled=empty||checkoutBusy||!navigator.onLine;cancelOrderButton.disabled=empty||checkoutBusy;mobileCartButton.disabled=empty||checkoutBusy;studentDiscount.disabled=empty||checkoutBusy;updateProductBadges();
+  const empty=!items.length;payCashButton.disabled=empty||checkoutBusy;payCardButton.disabled=empty||checkoutBusy;cancelOrderButton.disabled=empty||checkoutBusy;mobileCartButton.disabled=empty||checkoutBusy;studentDiscount.disabled=empty||checkoutBusy;updateProductBadges();
 }
 function openCheckout(){if(!cart.size)return flash('Erst ein Produkt auswählen');cartPanel.classList.add('open');checkoutBackdrop.classList.add('open');document.body.classList.add('checkout-open');checkoutClose?.focus({preventScroll:true})}
 function closeCheckout(){if(checkoutBusy)return;cartPanel.classList.remove('open');checkoutBackdrop.classList.remove('open');document.body.classList.remove('checkout-open')}
@@ -170,7 +170,7 @@ async function storeOfflineOrder(payload,total){await WFFOffline.enqueueOrder(pa
 async function finishOrder(action){
   if(checkoutBusy||!cart.size)return;
   const cancelled=action==='cancel';const status=cancelled?'cancelled':'completed';const payment=action==='cash'?'cash':action==='card'?'card':null;const totals=calculateTotals();
-  if(action==='card'&&!navigator.onLine){flash('Kartenzahlung ist offline gesperrt. Barzahlung bleibt sicher möglich.');return}
+  if(action==='card'&&!navigator.onLine){if(!window.confirm('Kartenzahlung am Terminal erfolgreich bestätigt?\n\nNur dann wird sie offline sicher gespeichert.'))return}
   const payload=buildOrderPayload(status,payment,!navigator.onLine);
   if(!navigator.onLine){
     setCheckoutBusy(true);
@@ -220,7 +220,7 @@ async function updateConnectionStatus(){
   if(offline)posConnectionText.textContent=pending?'Offline · '+pending+' Vorgang'+(pending===1?'':'e')+' sicher gespeichert':'Offline · Barzahlung bleibt möglich';
   else if(pending)posConnectionText.textContent='Online · '+pending+' Vorgang'+(pending===1?'':'e')+' wartet auf Synchronisierung';
   else posConnectionText.textContent='Online · alles synchronisiert';
-  posSyncNow.classList.toggle('hidden',offline||pending===0);checkoutNetworkNote.textContent=offline?'Offline: Bar wird lokal gesichert. Karte ist gesperrt.':'Zahlungsart wählen und abschließen.';cashButtonHint.textContent=offline?'offline sicher speichern':'sofort abschließen';cardButtonHint.textContent=offline?'offline nicht möglich':'Kartenzahlung';renderCart();
+  posSyncNow.classList.toggle('hidden',offline||pending===0);checkoutNetworkNote.textContent=offline?'Offline: Zahlungen werden lokal gesichert. Karte nur nach Terminal-Bestätigung.':'Zahlungsart wählen und abschließen.';cashButtonHint.textContent=offline?'offline sicher speichern':'sofort abschließen';cardButtonHint.textContent=offline?'Terminal bestätigen':'Kartenzahlung';renderCart();
 }
 async function syncPendingOrders(){if(syncing||!navigator.onLine||!db)return;syncing=true;posSyncNow.disabled=true;try{await WFFOffline.syncPending(async payload=>{const {data,error}=await db.rpc('submit_order_v2',{payload:{...payload,synced_from_offline:true}});return{data,error}})}catch(error){console.warn(error)}finally{syncing=false;posSyncNow.disabled=false;await updateConnectionStatus()}}
 function flash(message){document.querySelector('.toast')?.remove();const toast=document.createElement('div');toast.className='toast';toast.textContent=message;document.body.appendChild(toast);setTimeout(()=>toast.remove(),1900)}
