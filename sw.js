@@ -1,4 +1,4 @@
-const CACHE_NAME='wff-pos-shell-v17';
+const CACHE_NAME='wff-pos-shell-v18';
 const LOCAL_ASSETS=[
   './','./index.html','./drinks.html','./admin.html','./receipt.html',
   './styles.css','./access.css','./deposit.css','./mobile-pos.css','./receipt-actions.css','./admin.css','./receipt.css','./pwa.css','./mobile-ui.css',
