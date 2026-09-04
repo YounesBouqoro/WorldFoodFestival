@@ -78,6 +78,7 @@
           '<div><span>IPHONE APP</span><h2 id="iosInstallTitle">WFF Kasse hinzufügen</h2></div>' +
           '<button type="button" data-ios-install-close aria-label="Schließen">×</button>' +
         '</div>' +
+        '<div class="ios-install-preview"><img src="apple-touch-icon-wff-original-v3.png" alt="WFF Kasse App-Icon" /><div><strong>WFF Kasse</strong><span>Dieses Icon wird für die iPhone-App verwendet.</span></div></div>' +
         '<p class="ios-install-lead">Auf dem iPhone wird die Kasse über das Safari-Teilen-Menü zum Home-Bildschirm hinzugefügt.</p>' +
         '<ol class="ios-install-steps">' +
           '<li><strong>Safari-Teilen antippen</strong><span>Nutze den Teilen-Button in der Safari-Leiste – nicht einen Button innerhalb der Webseite.</span></li>' +
