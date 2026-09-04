@@ -4,9 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#ef7eae" />
+  <meta name="application-name" content="WFF Kasse" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="WFF Kasse" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="app-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="app-icon.svg" />
   <title>World Food Festival – Kasse</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="access.css" />
+  <link rel="stylesheet" href="pwa.css" />
 </head>
 <body>
   <header class="topbar app-topbar">
@@ -20,6 +28,7 @@
       <strong id="homeHeadline">Anmelden</strong>
     </div>
     <div class="topbar-actions">
+      <button class="pwa-install-button" data-install-app type="button">App installieren</button>
       <a class="admin-link" href="admin.html">Admin</a>
       <button class="cashier-chip hidden" id="cashierLogout" type="button" aria-label="Kassenbenutzer abmelden">
         <span id="cashierName">–</span>
@@ -73,5 +82,6 @@
   <script src="offline-store.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="index.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>
