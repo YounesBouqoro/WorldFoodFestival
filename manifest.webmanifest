@@ -19,6 +19,12 @@
   ],
   "icons": [
     {
+      "src": "./apple-touch-icon-wff-original-v3.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "./app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
