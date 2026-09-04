@@ -1,0 +1,40 @@
+{
+  "name": "World Food Festival Kassensystem",
+  "short_name": "WFF Kasse",
+  "description": "Mobiles Kassensystem für das World Food Festival",
+  "id": "./index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#ef7eae",
+  "theme_color": "#ef7eae",
+  "lang": "de-DE",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./app-icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Kasse öffnen",
+      "short_name": "Kasse",
+      "url": "./index.html"
+    },
+    {
+      "name": "Admin öffnen",
+      "short_name": "Admin",
+      "url": "./admin.html"
+    }
+  ]
+}
