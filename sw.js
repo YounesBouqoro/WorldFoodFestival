@@ -1,4 +1,4 @@
-const CACHE_NAME='wff-pos-shell-v13';
+const CACHE_NAME='wff-pos-shell-v14';
 const LOCAL_ASSETS=[
   './','./index.html','./drinks.html','./admin.html','./receipt.html',
   './styles.css','./access.css','./deposit.css','./mobile-pos.css','./receipt-actions.css','./admin.css','./receipt.css','./pwa.css','./mobile-ui.css',
@@ -9,8 +9,17 @@ const SUPABASE_CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE_NAME);
-    await cache.addAll(LOCAL_ASSETS);
-    try{await cache.add(new Request(SUPABASE_CDN,{mode:'no-cors'}));}catch{}
+    for(const asset of LOCAL_ASSETS){
+      try{
+        const url=new URL(asset,self.registration.scope).href;
+        const response=await fetch(new Request(url,{cache:'reload'}));
+        if(response&&response.ok)await cache.put(url,response.clone());
+      }catch{}
+    }
+    try{
+      const response=await fetch(new Request(SUPABASE_CDN,{mode:'no-cors'}));
+      if(response)await cache.put(SUPABASE_CDN,response.clone());
+    }catch{}
     self.skipWaiting();
   })());
 });
