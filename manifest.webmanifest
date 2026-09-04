@@ -26,13 +26,13 @@
     },
     {
       "src": "./app-icon.svg",
-      "sizes": "any",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
       "src": "./app-icon-maskable.svg",
-      "sizes": "any",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
@@ -48,5 +48,7 @@
       "short_name": "Admin",
       "url": "./admin.html"
     }
-  ]
+  ],
+  "prefer_related_applications": false,
+  "orientation": "portrait-primary"
 }
