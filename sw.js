@@ -1,4 +1,4 @@
-const CACHE_NAME='wff-pos-shell-v8';
+const CACHE_NAME='wff-pos-shell-v9';
 const LOCAL_ASSETS=[
   './','./index.html','./drinks.html','./admin.html','./receipt.html',
   './styles.css','./access.css','./deposit.css','./mobile-pos.css','./receipt-actions.css','./admin.css','./receipt.css','./pwa.css',
@@ -73,4 +73,33 @@ self.addEventListener('fetch',event=>{
     }).catch(()=>null);
     return cached || (await network) || new Response('',{status:503,statusText:'Offline'});
   })());
+});
+
+async function refreshAppCache(){
+  const cache=await caches.open(CACHE_NAME);
+  for(const asset of LOCAL_ASSETS){
+    try{
+      const url=new URL(asset,self.registration.scope).href;
+      const response=await fetch(new Request(url,{cache:'reload'}));
+      if(response&&response.ok)await cache.put(url,response.clone());
+    }catch{}
+  }
+  try{
+    const response=await fetch(new Request(SUPABASE_CDN,{cache:'reload',mode:'no-cors'}));
+    if(response)await cache.put(SUPABASE_CDN,response.clone());
+  }catch{}
+}
+
+self.addEventListener('message',event=>{
+  const type=event.data?.type;
+  if(type==='SKIP_WAITING'){
+    self.skipWaiting();
+    return;
+  }
+  if(type==='REFRESH_APP_CACHE'){
+    event.waitUntil((async()=>{
+      await refreshAppCache();
+      event.ports?.[0]?.postMessage({ok:true,cache:CACHE_NAME});
+    })());
+  }
 });
