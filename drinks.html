@@ -15,14 +15,20 @@
     <a class="back-link guard-order-exit" href="index.html" aria-label="Zurück zur Standauswahl">←</a>
     <a class="mini-brand guard-order-exit" href="index.html" aria-label="World Food Festival">WFF <span>26</span></a>
     <div class="cashier-title">
-      <span class="eyebrow">KASSENRECHNER</span>
+      <span class="eyebrow">KASSENSYSTEM</span>
       <h1 id="standTitle">Kasse</h1>
     </div>
+    <button class="refund-trigger" id="refundTrigger" type="button" title="Rückerstattung">↩ <span>Rückgabe</span></button>
     <div class="cashier-user" id="cashierBadge" title="Aktiver Kassenbenutzer">
-      <span>Kasse</span>
+      <span id="activeDeviceName">Gerät</span>
       <strong id="activeCashierName">–</strong>
     </div>
   </header>
+
+  <div class="pos-connection-bar" id="posConnectionBar" role="status">
+    <span id="posConnectionText">Online · alles synchronisiert</span>
+    <button id="posSyncNow" class="hidden" type="button">Synchronisieren</button>
+  </div>
 
   <main class="cashier-layout">
     <section class="catalog-panel" aria-label="Produkte auswählen">
@@ -34,11 +40,10 @@
 
     <aside class="cart-panel" aria-label="Bestellung prüfen">
       <div class="sheet-handle" aria-hidden="true"></div>
-
       <div class="cart-head">
         <div>
-          <span class="eyebrow">SCHRITT 2 VON 2</span>
-          <h2>Bestellung prüfen</h2>
+          <span class="eyebrow">SCHRITT 2 · PRÜFEN</span>
+          <h2>Bestellung</h2>
         </div>
         <button class="cart-close" id="checkoutClose" type="button" aria-label="Checkout schließen">×</button>
       </div>
@@ -64,17 +69,17 @@
 
       <div class="checkout-footer">
         <div class="checkout-step">
-          <strong>Zahlungsart wählen</strong>
-          <span>Damit wird die Bestellung gespeichert.</span>
+          <strong>SCHRITT 3 · ZAHLEN</strong>
+          <span id="checkoutNetworkNote">Zahlungsart wählen und abschließen.</span>
         </div>
         <div class="checkout-actions" aria-label="Bestellung abschließen">
           <button class="checkout-button cash" id="payCash" type="button">
             <strong>Bar</strong>
-            <span>Barzahlung</span>
+            <span id="cashButtonHint">sofort abschließen</span>
           </button>
           <button class="checkout-button card" id="payCard" type="button">
             <strong>Karte</strong>
-            <span>Kartenzahlung</span>
+            <span id="cardButtonHint">Kartenzahlung</span>
           </button>
         </div>
         <button class="checkout-button cancel" id="cancelOrder" type="button">Bestellung stornieren</button>
@@ -92,20 +97,47 @@
 
   <div class="receipt-modal hidden" id="receiptModal" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle">
     <div class="receipt-modal-card">
-      <span class="receipt-success">✓</span>
-      <span class="eyebrow">BESTELLUNG ABGESCHLOSSEN</span>
+      <span class="receipt-success" id="receiptSuccessIcon">✓</span>
+      <span class="eyebrow" id="receiptStatusLabel">BESTELLUNG ABGESCHLOSSEN</span>
       <h2 id="receiptModalTitle">Beleg anbieten</h2>
       <p id="receiptOrderSummary">–</p>
-      <div class="receipt-share-grid">
+      <div class="receipt-share-grid" id="receiptShareActions">
         <button id="receiptEmail" type="button">E-Mail</button>
         <button id="receiptSms" type="button">SMS</button>
         <button id="receiptOpen" type="button">Beleg öffnen</button>
       </div>
-      <small>Elektronischen Beleg nur mit Zustimmung des Gastes versenden.</small>
+      <small id="receiptHint">Elektronischen Beleg nur mit Zustimmung des Gastes versenden.</small>
       <button class="receipt-done" id="receiptDone" type="button">Fertig · nächste Bestellung</button>
     </div>
   </div>
 
+  <div class="refund-modal hidden" id="refundModal" role="dialog" aria-modal="true" aria-labelledby="refundTitle">
+    <div class="refund-card">
+      <div class="refund-head">
+        <div><span class="eyebrow">RÜCKERSTATTUNG</span><h2 id="refundTitle">Kauf auswählen</h2></div>
+        <button id="refundClose" type="button" aria-label="Rückerstattung schließen">×</button>
+      </div>
+      <p class="refund-help">Nur bereits bezahlte Bestellungen können vollständig zurückerstattet werden. Rückerstattungen brauchen eine Internetverbindung.</p>
+      <div id="refundSalesList" class="refund-sales-list"></div>
+      <form id="refundForm" class="refund-form hidden">
+        <input type="hidden" id="refundOrderNo" />
+        <div class="refund-selected" id="refundSelected">–</div>
+        <label for="refundReason">Grund</label>
+        <select id="refundReason" required>
+          <option value="Fehlbuchung">Fehlbuchung</option>
+          <option value="Kunde gibt Bestellung zurück">Kunde gibt Bestellung zurück</option>
+          <option value="Doppelt kassiert">Doppelt kassiert</option>
+          <option value="Sonstiger Grund">Sonstiger Grund</option>
+        </select>
+        <div class="refund-actions">
+          <button id="refundBack" type="button">Zurück</button>
+          <button id="refundConfirm" type="submit">Rückerstattung bestätigen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="offline-store.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
