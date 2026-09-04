@@ -2,6 +2,7 @@
   const ua = navigator.userAgent || '';
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isSafari = isIOS && /Safari/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo)/i.test(ua);
   const appStartUrl = new URL('./index.html', document.baseURI).href;
   let deferredPrompt = null;
   let registration = null;
@@ -38,8 +39,21 @@
   }
 
   function closeIOSInstallSheet() {
-    iosSheet?.classList.add('hidden');
+    if (iosSheet) iosSheet.classList.add('hidden');
     document.body.classList.remove('ios-install-open');
+  }
+
+  function showSafariShareHint() {
+    document.querySelector('.ios-safari-share-hint')?.remove();
+    const hint = document.createElement('div');
+    hint.className = 'ios-safari-share-hint';
+    hint.innerHTML = '<strong>Jetzt Safari-Teilen antippen</strong><span>Danach „Zum Home-Bildschirm“ wählen.</span><i aria-hidden="true">↓</i>';
+    document.body.appendChild(hint);
+    setTimeout(() => hint.classList.add('show'), 20);
+    setTimeout(() => {
+      hint.classList.remove('show');
+      setTimeout(() => hint.remove(), 250);
+    }, 6500);
   }
 
   function ensureIOSInstallSheet() {
@@ -50,30 +64,30 @@
     iosSheet.setAttribute('role', 'dialog');
     iosSheet.setAttribute('aria-modal', 'true');
     iosSheet.setAttribute('aria-labelledby', 'iosInstallTitle');
-    iosSheet.innerHTML = `
-      <button class="ios-install-backdrop" type="button" data-ios-install-close aria-label="Schließen"></button>
-      <section class="ios-install-card">
-        <div class="ios-install-handle" aria-hidden="true"></div>
-        <div class="ios-install-head">
-          <div>
-            <span>IPHONE APP</span>
-            <h2 id="iosInstallTitle">WFF Kasse hinzufügen</h2>
-          </div>
-          <button type="button" data-ios-install-close aria-label="Schließen">×</button>
-        </div>
-        <p class="ios-install-lead">Auf dem iPhone installiert Apple Web-Apps über das Teilen-Menü. Deine Kasse öffnet sich danach wie eine normale App.</p>
 
-        <ol class="ios-install-steps">
-          <li><strong>Teilen öffnen</strong><span>Tippe unten auf „Teilen öffnen“.</span></li>
-          <li><strong>„Zum Home-Bildschirm“ wählen</strong><span>Falls der Punkt nicht sichtbar ist: im Teilen-Menü nach unten scrollen bzw. „Aktionen bearbeiten“ öffnen.</span></li>
-          <li><strong>„Als Web-App öffnen“ aktiviert lassen</strong><span>Dann oben rechts auf „Hinzufügen“ tippen.</span></li>
-        </ol>
+    const primaryLabel = isSafari ? 'Safari-Teilen anzeigen' : 'Link für Safari kopieren';
+    const footnote = isSafari
+      ? 'Apple installiert Web-Apps auf dem iPhone über das native Safari-Teilen-Menü.'
+      : 'Du bist gerade nicht direkt in Safari. Link kopieren, in Safari öffnen und dort erneut „App hinzufügen“ wählen.';
 
-        <button class="ios-share-button" type="button" data-ios-share>Teilen öffnen</button>
-        <button class="ios-copy-button" type="button" data-ios-copy>Link kopieren</button>
-        <small>Wenn „Zum Home-Bildschirm“ im aktuellen Browser gar nicht angeboten wird, den kopierten Link einmal direkt in Safari öffnen und dort erneut auf „App hinzufügen“ tippen.</small>
-      </section>
-    `;
+    iosSheet.innerHTML =
+      '<button class="ios-install-backdrop" type="button" data-ios-install-close aria-label="Schließen"></button>' +
+      '<section class="ios-install-card">' +
+        '<div class="ios-install-handle" aria-hidden="true"></div>' +
+        '<div class="ios-install-head">' +
+          '<div><span>IPHONE APP</span><h2 id="iosInstallTitle">WFF Kasse hinzufügen</h2></div>' +
+          '<button type="button" data-ios-install-close aria-label="Schließen">×</button>' +
+        '</div>' +
+        '<p class="ios-install-lead">Auf dem iPhone wird die Kasse über das Safari-Teilen-Menü zum Home-Bildschirm hinzugefügt.</p>' +
+        '<ol class="ios-install-steps">' +
+          '<li><strong>Safari-Teilen antippen</strong><span>Nutze den Teilen-Button in der Safari-Leiste – nicht einen Button innerhalb der Webseite.</span></li>' +
+          '<li><strong>„Zum Home-Bildschirm“ wählen</strong><span>Falls der Punkt nicht sichtbar ist: im Teilen-Menü nach unten scrollen bzw. „Aktionen bearbeiten“ öffnen.</span></li>' +
+          '<li><strong>„Als Web-App öffnen“ aktiviert lassen</strong><span>Dann oben rechts auf „Hinzufügen“ tippen.</span></li>' +
+        '</ol>' +
+        '<button class="ios-share-button" type="button" data-ios-share>' + primaryLabel + '</button>' +
+        '<button class="ios-copy-button" type="button" data-ios-copy>Link kopieren</button>' +
+        '<small>' + footnote + '</small>' +
+      '</section>';
 
     document.body.appendChild(iosSheet);
 
@@ -82,20 +96,18 @@
     });
 
     iosSheet.querySelector('[data-ios-share]').addEventListener('click', async () => {
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: 'WFF Kasse', text: 'World Food Festival Kassensystem', url: appStartUrl });
-          return;
-        } catch (error) {
-          if (error?.name === 'AbortError') return;
-        }
+      if (isSafari) {
+        closeIOSInstallSheet();
+        showSafariShareHint();
+        return;
       }
+
       try {
         await navigator.clipboard.writeText(appStartUrl);
         const button = iosSheet.querySelector('[data-ios-share]');
         const old = button.textContent;
-        button.textContent = 'Link kopiert · in Safari öffnen';
-        setTimeout(() => { button.textContent = old; }, 2200);
+        button.textContent = 'Kopiert ✓ · jetzt in Safari öffnen';
+        setTimeout(() => { button.textContent = old; }, 2600);
       } catch {
         window.prompt('Diesen Link in Safari öffnen:', appStartUrl);
       }
