@@ -1,7 +1,7 @@
-const CACHE_NAME='wff-pos-shell-v12';
+const CACHE_NAME='wff-pos-shell-v13';
 const LOCAL_ASSETS=[
   './','./index.html','./drinks.html','./admin.html','./receipt.html',
-  './styles.css','./access.css','./deposit.css','./mobile-pos.css','./receipt-actions.css','./admin.css','./receipt.css','./pwa.css',
+  './styles.css','./access.css','./deposit.css','./mobile-pos.css','./receipt-actions.css','./admin.css','./receipt.css','./pwa.css','./mobile-ui.css',
   './offline-store.js','./index.js','./app.js','./returns.js','./admin.js','./receipt.js','./pwa.js','./manifest.webmanifest','./app-icon-192.png','./apple-touch-icon.png','./app-icon.svg','./app-icon-maskable.svg'
 ];
 const SUPABASE_CDN='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
