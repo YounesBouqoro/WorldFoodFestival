@@ -94,17 +94,34 @@ function renderStands(){
   $('standList').innerHTML=(state.stands||[]).map(s=>'<button type="button" class="stand-chip '+(s.active?'':'off')+'" data-edit-stand="'+esc(s.slug)+'">'+esc(s.icon||'🍽️')+' '+esc(s.name)+'</button>').join('');
   $('standList').querySelectorAll('[data-edit-stand]').forEach(button=>button.addEventListener('click',()=>editStand(button.dataset.editStand)));
 }
+function slugifyStand(value){return String(value||'').toLowerCase().trim().replace(/[ä]/g,'ae').replace(/[ö]/g,'oe').replace(/[ü]/g,'ue').replace(/[ß]/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)}
+let standSlugManuallyEdited=false;
 function editStand(slug=null){
   const s=slug?state.stands.find(item=>item.slug===slug):null;
-  $('standSlug').value=s?.slug||'';$('standSlug').readOnly=Boolean(s);$('standName').value=s?.name||'';$('standIcon').value=s?.icon||'';$('standSort').value=s?.sort_order??0;$('standActive').checked=s?.active??true;$('standForm').classList.remove('hidden');$('productForm').classList.add('hidden');$('standName').focus();
+  standSlugManuallyEdited=Boolean(s);
+  $('standSlug').value=s?.slug||'';
+  $('standSlug').readOnly=Boolean(s);
+  $('standName').value=s?.name||'';
+  $('standIcon').value=s?.icon||'';
+  $('standSort').value=s?.sort_order??0;
+  $('standActive').checked=s?.active??true;
+  $('standForm').classList.remove('hidden');
+  $('productForm').classList.add('hidden');
+  $('standName').focus();
 }
 $('newStand').addEventListener('click',()=>editStand());
+$('standName').addEventListener('input',()=>{
+  if(!$('standSlug').readOnly&&!standSlugManuallyEdited)$('standSlug').value=slugifyStand($('standName').value);
+});
+$('standSlug').addEventListener('input',()=>{
+  if(!$('standSlug').readOnly)standSlugManuallyEdited=true;
+});
 $('cancelStandEdit').addEventListener('click',()=>$('standForm').classList.add('hidden'));
 $('standForm').addEventListener('submit',async event=>{
   event.preventDefault();
   const {error}=await rpc('admin_save_stand',{p_slug:$('standSlug').value,p_name:$('standName').value,p_icon:$('standIcon').value,p_active:$('standActive').checked,p_sort_order:Number($('standSort').value||0)});
   if(error){console.error(error);return toast(error.message||'Stand konnte nicht gespeichert werden')}
-  $('standForm').classList.add('hidden');toast('Stand gespeichert');await loadState();
+  $('standForm').classList.add('hidden');toast('Stand gespeichert · jetzt Benutzer zuweisen oder Produkte anlegen');await loadState();
 });
 
 function fillStandSelect(){const select=$('productStand');const current=select.value;select.innerHTML=(state.stands||[]).map(s=>'<option value="'+esc(s.slug)+'">'+esc(s.name)+'</option>').join('');if([...select.options].some(o=>o.value===current))select.value=current}
