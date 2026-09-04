@@ -28,17 +28,23 @@
     </div>
   </header>
 
+  <div class="connection-bar" id="connectionBar" role="status">
+    <span id="connectionText">Online</span>
+    <button id="syncNow" class="hidden" type="button">Jetzt synchronisieren</button>
+  </div>
+
   <main class="home-shell access-shell">
     <section class="login-card" id="cashierLoginCard" aria-labelledby="cashierLoginTitle">
       <span class="login-kicker">KASSENZUGANG</span>
       <h1 id="cashierLoginTitle">Dein 4-stelliger Code</h1>
-      <p>Damit wird jede Bestellung automatisch deinem Kassenbenutzer zugeordnet.</p>
+      <p>Damit wird jede Bestellung automatisch deinem Kassenbenutzer und diesem Kassengerät zugeordnet.</p>
       <form id="cashierLoginForm" class="pin-form">
         <label for="cashierPin">Kassen-Code</label>
         <input id="cashierPin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" placeholder="••••" aria-describedby="loginMessage" required />
         <button type="submit">Anmelden</button>
         <div class="form-message" id="loginMessage" role="status"></div>
       </form>
+      <small class="offline-login-note">Offline ist eine neue Anmeldung nicht möglich. Bereits angemeldete Geräte können weiter kassieren.</small>
     </section>
 
     <div id="posHome" class="hidden">
@@ -46,7 +52,7 @@
         <div class="section-heading">
           <span class="eyebrow">SCHRITT 1</span>
           <h1>Stand auswählen</h1>
-          <p>Wähle den Bereich, an dem du kassierst.</p>
+          <p>Du siehst nur die Stände, die dir im Adminbereich zugewiesen wurden.</p>
         </div>
         <section class="stand-grid" id="standGrid" aria-label="Stände">
           <div class="stand-card disabled"><span class="stand-icon">…</span><span><strong>Stände werden geladen</strong></span></div>
@@ -57,13 +63,14 @@
         <div>
           <p class="eyebrow">SO FUNKTIONIERT'S</p>
           <h2>Auswählen.<br />Prüfen. Kassieren.</h2>
-          <p>Produkt antippen, Bestellung prüfen und mit Bar oder Karte abschließen. Pfand wird automatisch ergänzt und kann im Checkout angepasst werden.</p>
+          <p>Produkt antippen, Bestellung prüfen und mit Bar oder Karte abschließen. Bei Netzausfall werden Barzahlungen sicher auf dem Gerät gespeichert und später automatisch synchronisiert.</p>
         </div>
         <div class="festival-mark" aria-hidden="true">WFF<br><span>26</span></div>
       </section>
     </div>
   </main>
 
+  <script src="offline-store.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="index.js"></script>
 </body>
