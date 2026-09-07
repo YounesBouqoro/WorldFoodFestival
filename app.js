@@ -14,7 +14,6 @@ let discountActive=false;
 let checkoutBusy=false;
 let startedAt=null;
 let currentOrderId=null;
-let lastReceipt=null;
 let syncing=false;
 
 const euro=value=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(value||0));
@@ -51,11 +50,7 @@ const cashButtonHint=document.getElementById('cashButtonHint');
 const cardButtonHint=document.getElementById('cardButtonHint');
 const receiptModal=document.getElementById('receiptModal');
 const receiptOrderSummary=document.getElementById('receiptOrderSummary');
-const receiptEmail=document.getElementById('receiptEmail');
-const receiptSms=document.getElementById('receiptSms');
-const receiptOpen=document.getElementById('receiptOpen');
 const receiptDone=document.getElementById('receiptDone');
-const receiptShareActions=document.getElementById('receiptShareActions');
 const receiptHint=document.getElementById('receiptHint');
 const receiptStatusLabel=document.getElementById('receiptStatusLabel');
 const receiptModalTitle=document.getElementById('receiptModalTitle');
@@ -193,25 +188,19 @@ async function finishOrder(action){
   }
   setCheckoutBusy(false);
   if(cancelled){resetOrder();showCompletion({cancelled:true,orderNo:data?.order_no||'',total:Number(data?.total_amount||0)});return}
-  resetOrder();showCompletion({orderNo:data?.order_no||'',total:Number(data?.total_amount||0),paymentMethod:payment,receiptToken:data?.receipt_token});
+  resetOrder();showCompletion({orderNo:data?.order_no||'',total:Number(data?.total_amount||0),paymentMethod:payment});
 }
 function requestCancel(){if(!cart.size||checkoutBusy)return;if(window.confirm('Bestellung wirklich stornieren?\n\nSie wird als Storno gespeichert und zählt nicht zum Umsatz.'))finishOrder('cancel')}
 
 function showCompletion(context){
-  lastReceipt=context;const offline=Boolean(context.offline),cancelled=Boolean(context.cancelled);
-  receiptSuccessIcon.textContent=cancelled?'×':'✓';receiptStatusLabel.textContent=cancelled?'BESTELLUNG STORNIERT':offline?'OFFLINE SICHER GESPEICHERT':'BESTELLUNG ABGESCHLOSSEN';receiptModalTitle.textContent=cancelled?'Storno gespeichert':offline?'Kein Datenverlust':'Beleg anbieten';
+  const offline=Boolean(context.offline),cancelled=Boolean(context.cancelled);
+  receiptSuccessIcon.textContent=cancelled?'×':'✓';receiptStatusLabel.textContent=cancelled?'BESTELLUNG STORNIERT':offline?'OFFLINE SICHER GESPEICHERT':'BESTELLUNG ABGESCHLOSSEN';receiptModalTitle.textContent=cancelled?'Storno gespeichert':offline?'Kein Datenverlust':'Bestellung abgeschlossen';
   if(cancelled)receiptOrderSummary.textContent=context.orderNo?'Bestellung #'+context.orderNo+' · Storno':'Storno lokal gespeichert';
   else receiptOrderSummary.textContent=(context.orderNo?'Bestellung #'+context.orderNo+' · ':'')+euro(context.total)+(context.paymentMethod?' · '+(context.paymentMethod==='cash'?'Bar':'Karte'):'');
-  const share=Boolean(context.receiptToken&&!offline&&!cancelled);receiptShareActions.classList.toggle('hidden',!share);
-  receiptHint.textContent=offline?'Die Bestellung liegt sicher auf diesem Gerät und wird automatisch synchronisiert, sobald das Netz zurück ist.':cancelled?'Der Storno ist protokolliert und zählt nicht zum Umsatz.':'Elektronischen Beleg nur mit Zustimmung des Gastes versenden.';
+  receiptHint.textContent=offline?'Die Bestellung liegt sicher auf diesem Gerät und wird automatisch synchronisiert, sobald das Netz zurück ist.':cancelled?'Der Storno ist protokolliert und zählt nicht zum Umsatz.':'Abrechnung und Belegausgabe erfolgen über SumUp.';
   receiptModal.classList.remove('hidden');document.body.classList.add('receipt-open');receiptDone.focus({preventScroll:true});
 }
-function hideReceiptModal(){receiptModal.classList.add('hidden');document.body.classList.remove('receipt-open');lastReceipt=null}
-function receiptUrl(){if(!lastReceipt?.receiptToken)return null;const url=new URL('receipt.html',location.href);url.searchParams.set('t',lastReceipt.receiptToken);return url.toString()}
-function receiptShareText(){const url=receiptUrl();return 'World Food Festival – Beleg #'+(lastReceipt?.orderNo||'')+'\nGesamt: '+euro(lastReceipt?.total)+'\n'+(url||'')}
-receiptEmail.addEventListener('click',()=>{if(lastReceipt)location.href='mailto:?subject='+encodeURIComponent('Beleg World Food Festival #'+(lastReceipt.orderNo||''))+'&body='+encodeURIComponent(receiptShareText())});
-receiptSms.addEventListener('click',()=>{if(!lastReceipt)return;const body=encodeURIComponent(receiptShareText());location.href=/iPad|iPhone|iPod/.test(navigator.userAgent)?'sms:&body='+body:'sms:?body='+body});
-receiptOpen.addEventListener('click',()=>{const url=receiptUrl();if(url)window.open(url,'_blank','noopener')});
+function hideReceiptModal(){receiptModal.classList.add('hidden');document.body.classList.remove('receipt-open')}
 receiptDone.addEventListener('click',hideReceiptModal);
 
 async function updateConnectionStatus(){
