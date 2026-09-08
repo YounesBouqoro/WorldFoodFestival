@@ -135,10 +135,18 @@ function renderCatalog(){
   categoryTabs.querySelectorAll('.category-tab').forEach(tab=>tab.addEventListener('click',()=>{categoryTabs.querySelectorAll('.category-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');document.getElementById(tab.dataset.target)?.scrollIntoView({behavior:'smooth',block:'start'})}));
 }
 function ensureOrderIdentity(){if(!startedAt)startedAt=new Date().toISOString();if(!currentOrderId)currentOrderId=WFFOffline.uuid()}
-function addItem(productId){const product=activeStand.products.find(p=>p.id===productId);if(!product)return;ensureOrderIdentity();const existing=cart.get(productId)||{product,qty:0,depositQty:0};existing.qty+=1;if(product.deposit_enabled)existing.depositQty+=1;cart.set(productId,existing);renderCart()}
+function isDepositReturnProduct(product){return Boolean(product&&Number(product.price)<0&&(/pfand/i.test(String(product.name||''))||/pfand/i.test(String(product.category||''))))}
+function cartHasDepositReturn(){return [...cart.values()].some(item=>isDepositReturnProduct(item.product))}
+function cartHasRegularItems(){return [...cart.values()].some(item=>!isDepositReturnProduct(item.product))}
+function addItem(productId){
+  const product=activeStand.products.find(p=>p.id===productId);if(!product)return;
+  if(isDepositReturnProduct(product)&&cartHasRegularItems())return flash('Pfandrückgabe bitte separat von einer Bestellung erfassen');
+  if(!isDepositReturnProduct(product)&&cartHasDepositReturn())return flash('Pfandrückgabe zuerst separat abschließen');
+  ensureOrderIdentity();const existing=cart.get(productId)||{product,qty:0,depositQty:0};existing.qty+=1;if(product.deposit_enabled)existing.depositQty+=1;cart.set(productId,existing);renderCart()
+}
 function changeQty(productId,delta){if(checkoutBusy)return;const item=cart.get(productId);if(!item)return;if(delta>0){ensureOrderIdentity();item.qty+=1;if(item.product.deposit_enabled)item.depositQty+=1}else{item.qty-=1;if(item.product.deposit_enabled)item.depositQty=Math.min(item.depositQty,Math.max(0,item.qty))}if(item.qty<=0)cart.delete(productId);else cart.set(productId,item);if(!cart.size){startedAt=null;currentOrderId=null}renderCart()}
 function changeDeposit(productId,delta){if(checkoutBusy)return;const item=cart.get(productId);if(!item?.product.deposit_enabled)return;item.depositQty=Math.max(0,Math.min(item.qty,item.depositQty+delta));cart.set(productId,item);renderCart()}
-function calculateTotals(items=[...cart.values()]){const productSubtotal=items.reduce((s,i)=>s+i.product.price*i.qty,0);const depositSubtotal=items.reduce((s,i)=>s+(i.product.deposit_enabled?i.depositQty*i.product.deposit_price:0),0);const discountableSubtotal=items.filter(i=>i.product.discountable).reduce((s,i)=>s+Math.max(i.product.price*i.qty,0),0);const discount=discountActive?discountableSubtotal*.25:0;const total=productSubtotal+depositSubtotal-discount;const count=items.reduce((s,i)=>s+i.qty,0);return{productSubtotal,depositSubtotal,discount,total,count}}
+function calculateTotals(items=[...cart.values()]){const productSubtotal=items.reduce((s,i)=>s+i.product.price*i.qty,0);const depositSubtotal=items.reduce((s,i)=>s+(i.product.deposit_enabled?i.depositQty*i.product.deposit_price:0),0);const discountableSubtotal=items.filter(i=>i.product.discountable).reduce((s,i)=>s+Math.max(i.product.price*i.qty,0),0);const discount=discountActive?discountableSubtotal*.25:0;const productPayable=productSubtotal-discount;const total=productPayable+depositSubtotal;const count=items.reduce((s,i)=>s+i.qty,0);return{productSubtotal,depositSubtotal,discount,productPayable,total,count}}
 function updateProductBadges(){productGroups.querySelectorAll('[data-product-badge]').forEach(b=>{const qty=cart.get(b.dataset.productBadge)?.qty||0;b.textContent=qty;b.classList.toggle('hidden',qty===0);b.closest('.product-button')?.classList.toggle('selected',qty>0)})}
 function renderCart(){
   const items=[...cart.values()];
@@ -152,8 +160,15 @@ function renderCart(){
     cartItems.querySelectorAll('[data-action]').forEach(b=>b.addEventListener('click',()=>changeQty(b.dataset.id,b.dataset.action==='plus'?1:-1)));
     cartItems.querySelectorAll('[data-deposit-action]').forEach(b=>b.addEventListener('click',()=>changeDeposit(b.dataset.id,b.dataset.depositAction==='plus'?1:-1)));
   }
-  const t=calculateTotals(items);productSubtotalEl.textContent=euro(t.productSubtotal);depositSubtotalEl.textContent=euro(t.depositSubtotal);discountValue.textContent='−'+euro(t.discount);discountRow.classList.toggle('hidden',!discountActive);totalEl.textContent=euro(t.total);mobileTotal.textContent=euro(t.total);mobileCount.textContent=t.count;mobileItemLabel.textContent=t.count+' Artikel';
-  const empty=!items.length;payCashButton.disabled=empty||checkoutBusy;payCardButton.disabled=empty||checkoutBusy;cancelOrderButton.disabled=empty||checkoutBusy;mobileCartButton.disabled=empty||checkoutBusy;studentDiscount.disabled=empty||checkoutBusy;updateProductBadges();
+  const t=calculateTotals(items);const depositReturnMode=items.some(item=>isDepositReturnProduct(item.product));
+  productSubtotalEl.textContent=euro(t.productSubtotal);depositSubtotalEl.textContent=euro(t.depositSubtotal);discountValue.textContent='−'+euro(t.discount);discountRow.classList.toggle('hidden',!discountActive);totalEl.textContent=euro(t.total);mobileTotal.textContent=euro(t.total);mobileCount.textContent=t.count;mobileItemLabel.textContent=t.count+' Artikel';
+  const empty=!items.length;
+  payCashButton.querySelector('strong').textContent=depositReturnMode?'Bar auszahlen':'Bar';
+  cashButtonHint.textContent=depositReturnMode?euro(Math.abs(t.total))+' Pfand zurück':euro(t.total)+' gesamt bar';
+  payCardButton.querySelector('strong').textContent='Karte';
+  cardButtonHint.textContent=depositReturnMode?'Pfandrückgabe nur bar':t.depositSubtotal>0?euro(t.productPayable)+' Karte · '+euro(t.depositSubtotal)+' Pfand bar':euro(t.productPayable)+' am Terminal';
+  checkoutNetworkNote.textContent=depositReturnMode?'Pfandrückgabe wird ausschließlich bar ausgezahlt.':t.depositSubtotal>0?'Pfand wird immer bar kassiert – auch wenn die Produkte per Karte bezahlt werden.':(!navigator.onLine?'Offline: Zahlungen werden lokal gesichert.':'Zahlungsart wählen und abschließen.');
+  payCashButton.disabled=empty||checkoutBusy;payCardButton.disabled=empty||checkoutBusy||depositReturnMode;cancelOrderButton.disabled=empty||checkoutBusy;mobileCartButton.disabled=empty||checkoutBusy;studentDiscount.disabled=empty||checkoutBusy||depositReturnMode;updateProductBadges();
 }
 function openCheckout(){if(!cart.size)return flash('Erst ein Produkt auswählen');cartPanel.classList.add('open');checkoutBackdrop.classList.add('open');document.body.classList.add('checkout-open');checkoutClose?.focus({preventScroll:true})}
 function closeCheckout(){if(checkoutBusy)return;cartPanel.classList.remove('open');checkoutBackdrop.classList.remove('open');document.body.classList.remove('checkout-open')}
@@ -164,12 +179,18 @@ async function storeOfflineOrder(payload,total){await WFFOffline.enqueueOrder(pa
 
 async function finishOrder(action){
   if(checkoutBusy||!cart.size)return;
-  const cancelled=action==='cancel';const status=cancelled?'cancelled':'completed';const payment=action==='cash'?'cash':action==='card'?'card':null;const totals=calculateTotals();
-  if(action==='card'&&!navigator.onLine){if(!window.confirm('Kartenzahlung am Terminal erfolgreich bestätigt?\n\nNur dann wird sie offline sicher gespeichert.'))return}
+  const cancelled=action==='cancel';const status=cancelled?'cancelled':'completed';const payment=action==='cash'?'cash':action==='card'?'card':null;const totals=calculateTotals();const depositReturnMode=cartHasDepositReturn();
+  if(action==='card'&&depositReturnMode)return flash('Pfandrückgabe darf nur bar ausgezahlt werden');
+  if(action==='card'&&totals.depositSubtotal>0){
+    const message='Am Kartenterminal nur '+euro(totals.productPayable)+' kassieren.\nZusätzlich '+euro(totals.depositSubtotal)+' Pfand BAR kassieren.\n\nSind beide Beträge korrekt erfasst?';
+    if(!window.confirm(message))return;
+  }else if(action==='card'&&!navigator.onLine){
+    if(!window.confirm('Kartenzahlung am Terminal erfolgreich bestätigt?\n\nNur dann wird sie offline sicher gespeichert.'))return
+  }
   const payload=buildOrderPayload(status,payment,!navigator.onLine);
   if(!navigator.onLine){
     setCheckoutBusy(true);
-    try{await storeOfflineOrder(payload,totals.total);setCheckoutBusy(false);resetOrder();showCompletion({offline:true,cancelled,total:totals.total,paymentMethod:payment})}
+    try{await storeOfflineOrder(payload,totals.total);setCheckoutBusy(false);resetOrder();showCompletion({offline:true,cancelled,total:totals.total,paymentMethod:payment,productPayment:totals.productPayable,depositCash:totals.depositSubtotal,depositReturn:depositReturnMode})}
     catch(error){setCheckoutBusy(false);console.error(error);flash('Lokales Speichern fehlgeschlagen – Bestellung bleibt offen')}
     return;
   }
@@ -178,7 +199,7 @@ async function finishOrder(action){
   if(error){
     console.error(error);
     if(networkError(error)&&action!=='card'){
-      try{await storeOfflineOrder({...payload,synced_from_offline:true},totals.total);setCheckoutBusy(false);resetOrder();showCompletion({offline:true,cancelled,total:totals.total,paymentMethod:payment});return}catch(e){console.error(e)}
+      try{await storeOfflineOrder({...payload,synced_from_offline:true},totals.total);setCheckoutBusy(false);resetOrder();showCompletion({offline:true,cancelled,total:totals.total,paymentMethod:payment,productPayment:totals.productPayable,depositCash:totals.depositSubtotal,depositReturn:depositReturnMode});return}catch(e){console.error(e)}
     }
     setCheckoutBusy(false);
     if(/session/i.test(String(error.message||''))){flash('Kassen-Anmeldung abgelaufen');setTimeout(()=>location.replace('index.html'),900);return}
@@ -188,7 +209,7 @@ async function finishOrder(action){
   }
   setCheckoutBusy(false);
   if(cancelled){resetOrder();showCompletion({cancelled:true,orderNo:data?.order_no||'',total:Number(data?.total_amount||0)});return}
-  resetOrder();showCompletion({orderNo:data?.order_no||'',total:Number(data?.total_amount||0),paymentMethod:payment});
+  resetOrder();showCompletion({orderNo:data?.order_no||'',total:Number(data?.total_amount||totals.total),paymentMethod:payment,productPayment:totals.productPayable,depositCash:totals.depositSubtotal,depositReturn:depositReturnMode});
 }
 function requestCancel(){if(!cart.size||checkoutBusy)return;if(window.confirm('Bestellung wirklich stornieren?\n\nSie wird als Storno gespeichert und zählt nicht zum Umsatz.'))finishOrder('cancel')}
 
@@ -196,8 +217,10 @@ function showCompletion(context){
   const offline=Boolean(context.offline),cancelled=Boolean(context.cancelled);
   receiptSuccessIcon.textContent=cancelled?'×':'✓';receiptStatusLabel.textContent=cancelled?'BESTELLUNG STORNIERT':offline?'OFFLINE SICHER GESPEICHERT':'BESTELLUNG ABGESCHLOSSEN';receiptModalTitle.textContent=cancelled?'Storno gespeichert':offline?'Kein Datenverlust':'Bestellung abgeschlossen';
   if(cancelled)receiptOrderSummary.textContent=context.orderNo?'Bestellung #'+context.orderNo+' · Storno':'Storno lokal gespeichert';
+  else if(context.depositReturn)receiptOrderSummary.textContent=(context.orderNo?'Vorgang #'+context.orderNo+' · ':'')+euro(Math.abs(context.total))+' Pfand bar ausgezahlt';
+  else if(context.paymentMethod==='card'&&Number(context.depositCash)>0)receiptOrderSummary.textContent=(context.orderNo?'Bestellung #'+context.orderNo+' · ':'')+'Karte '+euro(context.productPayment)+' · Pfand bar '+euro(context.depositCash)+' · Gesamt '+euro(context.total);
   else receiptOrderSummary.textContent=(context.orderNo?'Bestellung #'+context.orderNo+' · ':'')+euro(context.total)+(context.paymentMethod?' · '+(context.paymentMethod==='cash'?'Bar':'Karte'):'');
-  receiptHint.textContent=offline?'Die Bestellung liegt sicher auf diesem Gerät und wird automatisch synchronisiert, sobald das Netz zurück ist.':cancelled?'Der Storno ist protokolliert und zählt nicht zum Umsatz.':'Abrechnung und Belegausgabe erfolgen über SumUp.';
+  receiptHint.textContent=offline?'Die Bestellung liegt sicher auf diesem Gerät und wird automatisch synchronisiert, sobald das Netz zurück ist.':cancelled?'Der Storno ist protokolliert und zählt nicht zum Umsatz.':context.depositReturn?'Die Pfandauszahlung wird als Bargeldbewegung im Kassensturz berücksichtigt.':Number(context.depositCash)>0?'Pfand ist als separate Barbewegung erfasst. Abrechnung der Produktzahlung erfolgt über SumUp.':'Abrechnung und Belegausgabe erfolgen über SumUp.';
   receiptModal.classList.remove('hidden');document.body.classList.add('receipt-open');receiptDone.focus({preventScroll:true});
 }
 function hideReceiptModal(){receiptModal.classList.add('hidden');document.body.classList.remove('receipt-open')}
@@ -209,7 +232,7 @@ async function updateConnectionStatus(){
   if(offline)posConnectionText.textContent=pending?'Offline · '+pending+' Vorgang'+(pending===1?'':'e')+' sicher gespeichert':'Offline · Barzahlung bleibt möglich';
   else if(pending)posConnectionText.textContent='Online · '+pending+' Vorgang'+(pending===1?'':'e')+' wartet auf Synchronisierung';
   else posConnectionText.textContent='Online · alles synchronisiert';
-  posSyncNow.classList.toggle('hidden',offline||pending===0);checkoutNetworkNote.textContent=offline?'Offline: Zahlungen werden lokal gesichert. Karte nur nach Terminal-Bestätigung.':'Zahlungsart wählen und abschließen.';cashButtonHint.textContent=offline?'offline sicher speichern':'sofort abschließen';cardButtonHint.textContent=offline?'Terminal bestätigen':'Kartenzahlung';renderCart();
+  posSyncNow.classList.toggle('hidden',offline||pending===0);renderCart();
 }
 async function syncPendingOrders(){if(syncing||!navigator.onLine||!db)return;syncing=true;posSyncNow.disabled=true;try{await WFFOffline.syncPending(async payload=>{const {data,error}=await db.rpc('submit_order_v2',{payload:{...payload,synced_from_offline:true}});return{data,error}})}catch(error){console.warn(error)}finally{syncing=false;posSyncNow.disabled=false;await updateConnectionStatus()}}
 function flash(message){document.querySelector('.toast')?.remove();const toast=document.createElement('div');toast.className='toast';toast.textContent=message;document.body.appendChild(toast);setTimeout(()=>toast.remove(),1900)}
