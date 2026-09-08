@@ -118,7 +118,7 @@
           </div>
           <div class="option-row">
             <label class="check"><input id="productDeposit" type="checkbox" /> Pfand</label>
-            <div class="field compact"><label for="productDepositPrice">Pfand €</label><input id="productDepositPrice" type="number" step="0.01" value="2" /></div>
+            <div class="field compact"><label for="productDepositPrice">Pfand €</label><input id="productDepositPrice" type="number" step="0.01" value="3" /></div>
             <div class="field compact"><label for="productDepositTax">Pfand MwSt. %</label><input id="productDepositTax" type="number" step="0.01" value="19" /></div>
           </div>
           <div class="option-row">
@@ -167,8 +167,27 @@
       </section>
 
       <section class="admin-panel" data-panel="sales">
-        <div class="panel-heading"><div><small>TRACKING</small><h2>Vorgänge</h2></div><button type="button" id="refreshAdmin">Aktualisieren</button></div>
-        <div class="sales-summary" id="salesSummary"></div>
+        <div class="panel-heading"><div><small>TRACKING & KASSENSTURZ</small><h2>Vorgänge</h2></div><button type="button" id="refreshAdmin">Aktualisieren</button></div>
+        <p class="panel-intro">Vor dem Kassensturz alle Geräte synchronisieren. Pfand wird separat als Bargeldbewegung ausgewiesen und gehört nicht zum Warenumsatz.</p>
+
+        <form id="cashReportForm" class="editor-card always cash-report-form">
+          <h3>Kassensturz</h3>
+          <div class="grid-2">
+            <div class="field"><label for="cashReportFrom">Von</label><input id="cashReportFrom" type="datetime-local" required /></div>
+            <div class="field"><label for="cashReportTo">Bis</label><input id="cashReportTo" type="datetime-local" required /></div>
+            <div class="field"><label for="cashReportStand">Stand</label><select id="cashReportStand"><option value="">Alle Stände</option></select></div>
+            <div class="field"><label for="cashReportDevice">Gerät / Kasse</label><select id="cashReportDevice"><option value="">Alle Geräte</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="secondary" id="cashReportToday">Heute</button>
+            <button type="submit">Kassensturz berechnen</button>
+          </div>
+        </form>
+
+        <div class="sales-summary cash-report-summary" id="cashReportSummary">
+          <div class="summary-card"><span>KASSENSTURZ</span><strong>Wird geladen …</strong></div>
+        </div>
+
         <div class="sales-table-wrap">
           <table>
             <thead><tr><th>Zeit</th><th>Ref.</th><th>Art</th><th>Kasse</th><th>Gerät</th><th>Stand</th><th>Zahlung</th><th>Status</th><th>Betrag</th></tr></thead>
