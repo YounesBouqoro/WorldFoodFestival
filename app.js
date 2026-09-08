@@ -214,13 +214,17 @@ async function finishOrder(action){
 function requestCancel(){if(!cart.size||checkoutBusy)return;if(window.confirm('Bestellung wirklich stornieren?\n\nSie wird als Storno gespeichert und zählt nicht zum Umsatz.'))finishOrder('cancel')}
 
 function showCompletion(context){
-  const offline=Boolean(context.offline),cancelled=Boolean(context.cancelled);
-  receiptSuccessIcon.textContent=cancelled?'×':'✓';receiptStatusLabel.textContent=cancelled?'BESTELLUNG STORNIERT':offline?'OFFLINE SICHER GESPEICHERT':'BESTELLUNG ABGESCHLOSSEN';receiptModalTitle.textContent=cancelled?'Storno gespeichert':offline?'Kein Datenverlust':'Bestellung abgeschlossen';
-  if(cancelled)receiptOrderSummary.textContent=context.orderNo?'Bestellung #'+context.orderNo+' · Storno':'Storno lokal gespeichert';
+  const offline=Boolean(context.offline),cancelled=Boolean(context.cancelled),refund=Boolean(context.refund);
+  receiptSuccessIcon.textContent=cancelled?'×':'✓';
+  receiptStatusLabel.textContent=refund?'RÜCKERSTATTUNG ABGESCHLOSSEN':cancelled?'BESTELLUNG STORNIERT':offline?'OFFLINE SICHER GESPEICHERT':'BESTELLUNG ABGESCHLOSSEN';
+  receiptModalTitle.textContent=refund?'Rückerstattung abgeschlossen':cancelled?'Storno gespeichert':offline?'Kein Datenverlust':'Bestellung abgeschlossen';
+  if(refund&&context.paymentMethod==='card'&&Number(context.depositCash)>0)receiptOrderSummary.textContent=(context.refundNo?context.refundNo+' · ':'')+'Karte '+euro(context.productPayment)+' · Pfand bar '+euro(context.depositCash)+' · Gesamt '+euro(context.total);
+  else if(refund)receiptOrderSummary.textContent=(context.refundNo?context.refundNo+' · ':'')+euro(context.total)+' zurückerstattet · '+(context.paymentMethod==='cash'?'Bar':'Karte');
+  else if(cancelled)receiptOrderSummary.textContent=context.orderNo?'Bestellung #'+context.orderNo+' · Storno':'Storno lokal gespeichert';
   else if(context.depositReturn)receiptOrderSummary.textContent=(context.orderNo?'Vorgang #'+context.orderNo+' · ':'')+euro(Math.abs(context.total))+' Pfand bar ausgezahlt';
   else if(context.paymentMethod==='card'&&Number(context.depositCash)>0)receiptOrderSummary.textContent=(context.orderNo?'Bestellung #'+context.orderNo+' · ':'')+'Karte '+euro(context.productPayment)+' · Pfand bar '+euro(context.depositCash)+' · Gesamt '+euro(context.total);
   else receiptOrderSummary.textContent=(context.orderNo?'Bestellung #'+context.orderNo+' · ':'')+euro(context.total)+(context.paymentMethod?' · '+(context.paymentMethod==='cash'?'Bar':'Karte'):'');
-  receiptHint.textContent=offline?'Die Bestellung liegt sicher auf diesem Gerät und wird automatisch synchronisiert, sobald das Netz zurück ist.':cancelled?'Der Storno ist protokolliert und zählt nicht zum Umsatz.':context.depositReturn?'Die Pfandauszahlung wird als Bargeldbewegung im Kassensturz berücksichtigt.':Number(context.depositCash)>0?'Pfand ist als separate Barbewegung erfasst. Abrechnung der Produktzahlung erfolgt über SumUp.':'Abrechnung und Belegausgabe erfolgen über SumUp.';
+  receiptHint.textContent=refund&&Number(context.depositCash)>0?'Warenbetrag wurde über die ursprüngliche Zahlungsart erstattet; Pfand wurde bar ausgezahlt.':refund?'Rückerstattung ist protokolliert.':offline?'Die Bestellung liegt sicher auf diesem Gerät und wird automatisch synchronisiert, sobald das Netz zurück ist.':cancelled?'Der Storno ist protokolliert und zählt nicht zum Umsatz.':context.depositReturn?'Die Pfandauszahlung wird als Bargeldbewegung im Kassensturz berücksichtigt.':Number(context.depositCash)>0?'Pfand ist als separate Barbewegung erfasst. Abrechnung der Produktzahlung erfolgt über SumUp.':'Abrechnung und Belegausgabe erfolgen über SumUp.';
   receiptModal.classList.remove('hidden');document.body.classList.add('receipt-open');receiptDone.focus({preventScroll:true});
 }
 function hideReceiptModal(){receiptModal.classList.add('hidden');document.body.classList.remove('receipt-open')}
