@@ -26,12 +26,16 @@
     if(error||!Array.isArray(data)){list.innerHTML='<div class="refund-empty">Käufe konnten nicht geladen werden.</div>';return}
     if(!data.length){list.innerHTML='<div class="refund-empty">Keine offenen Käufe für eine Rückerstattung.</div>';return}
 
-    list.innerHTML=data.map(sale=>'<button type="button" class="refund-sale" data-order-no="'+sale.order_no+'"><span><strong>#'+sale.order_no+' · '+pos.escapeHtml(sale.stand)+'</strong><small>'+fmt(sale.created_at)+' · '+(sale.payment_method==='cash'?'Bar':'Karte')+'</small></span><strong>'+pos.euro(sale.total_amount)+'</strong></button>').join('');
+    list.innerHTML=data.map(sale=>{
+      const split=sale.payment_method==='card'&&Number(sale.deposit_total)>0?'Karte '+pos.euro(sale.product_payment_amount)+' · Pfand '+pos.euro(sale.deposit_total)+' bar':(sale.payment_method==='cash'?'Bar':'Karte');
+      return '<button type="button" class="refund-sale" data-order-no="'+sale.order_no+'"><span><strong>#'+sale.order_no+' · '+pos.escapeHtml(sale.stand)+'</strong><small>'+fmt(sale.created_at)+' · '+split+'</small></span><strong>'+pos.euro(sale.total_amount)+'</strong></button>';
+    }).join('');
     list.querySelectorAll('[data-order-no]').forEach(button=>button.addEventListener('click',()=>{
       selectedSale=data.find(s=>String(s.order_no)===String(button.dataset.orderNo));
       if(!selectedSale)return;
       orderNo.value=selectedSale.order_no;
-      selected.innerHTML='<strong>Bestellung #'+selectedSale.order_no+'</strong><span>'+pos.euro(selectedSale.total_amount)+' · '+(selectedSale.payment_method==='cash'?'Bar':'Karte')+'</span>';
+      const split=selectedSale.payment_method==='card'&&Number(selectedSale.deposit_total)>0?'Karte '+pos.euro(selectedSale.product_payment_amount)+' · Pfand '+pos.euro(selectedSale.deposit_total)+' bar':(selectedSale.payment_method==='cash'?'Bar':'Karte');
+      selected.innerHTML='<strong>Bestellung #'+selectedSale.order_no+'</strong><span>'+pos.euro(selectedSale.total_amount)+' · '+split+'</span>';
       list.classList.add('hidden');form.classList.remove('hidden');reason.focus();
     }));
   }
@@ -46,7 +50,10 @@
 
     let cardConfirmed=false;
     if(selectedSale.payment_method==='card'){
-      cardConfirmed=window.confirm('Kartenerstattung zuerst am Kartenterminal durchführen.\n\nNur fortfahren, wenn die Erstattung dort erfolgreich bestätigt wurde.');
+      const productAmount=Number(selectedSale.product_payment_amount||0);
+      const depositAmount=Number(selectedSale.deposit_total||0);
+      const message='Am Kartenterminal nur '+pos.euro(productAmount)+' erstatten.'+(depositAmount>0?'\nZusätzlich '+pos.euro(depositAmount)+' Pfand BAR auszahlen.':'')+'\n\nNur fortfahren, wenn '+(depositAmount>0?'beide Schritte':'die Kartenerstattung')+' erledigt sind.';
+      cardConfirmed=window.confirm(message);
       if(!cardConfirmed)return;
     }else{
       if(!window.confirm('Barbetrag '+pos.euro(selectedSale.total_amount)+' wirklich zurückzahlen?'))return;
@@ -71,6 +78,8 @@
       orderNo:data?.order_no||'',
       total:Number(data?.amount||0),
       paymentMethod:data?.payment_method,
+      productPayment:Number(selectedSale.product_payment_amount||0),
+      depositCash:Number(selectedSale.deposit_total||0),
       receiptToken:data?.receipt_token
     });
   });
