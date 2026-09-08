@@ -3,6 +3,7 @@ const SUPABASE_PUBLISHABLE_KEY='sb_publishable_R26J9-8_tJV00doT2Bwajg_yeGz8bW2';
 const db=window.supabase?.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const ADMIN_TOKEN_KEY='wff-admin-token';
 let state={cashiers:[],devices:[],stands:[],products:[],settings:{},transactions:[],product_analysis:[]};
+let cashReport=null;
 
 const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
@@ -38,8 +39,9 @@ async function loadState(){
   if(error||!data){console.error(error);toast('Admin-Daten konnten nicht geladen werden');return}
   state={cashiers:[],devices:[],stands:[],products:[],settings:{},transactions:[],product_analysis:[],...data};
   renderAll();
+  await loadCashReport();
 }
-function renderAll(){renderCashiers();renderDevices();renderStands();renderProducts();renderSettings();renderAnalysis();renderSales();fillStandSelect()}
+function renderAll(){renderCashiers();renderDevices();renderStands();renderProducts();renderSettings();renderAnalysis();renderSales();fillStandSelect();fillCashReportFilters();ensureCashReportDefaults()}
 
 function standName(slug){return state.stands.find(s=>s.slug===slug)?.name||slug}
 function renderCashiers(){
@@ -131,7 +133,7 @@ function renderProducts(){
 }
 function editProduct(id=null){
   fillStandSelect();const p=id?state.products.find(item=>item.id===id):null;
-  $('productId').value=p?.id||'';$('productStand').value=p?.stand_slug||state.stands?.[0]?.slug||'';$('productCategory').value=p?.category||'';$('productName').value=p?.name||'';$('productPrice').value=p?.price??'';$('productTax').value=p?.tax_rate??19;$('productSort').value=p?.sort_order??0;$('productDeposit').checked=p?.deposit_enabled??false;$('productDepositPrice').value=p?.deposit_price??2;$('productDepositTax').value=p?.deposit_tax_rate??19;$('productDiscountable').checked=p?.discountable??true;$('productActive').checked=p?.active??true;$('productForm').classList.remove('hidden');$('standForm').classList.add('hidden');toggleDepositFields();$('productName').focus();
+  $('productId').value=p?.id||'';$('productStand').value=p?.stand_slug||state.stands?.[0]?.slug||'';$('productCategory').value=p?.category||'';$('productName').value=p?.name||'';$('productPrice').value=p?.price??'';$('productTax').value=p?.tax_rate??19;$('productSort').value=p?.sort_order??0;$('productDeposit').checked=p?.deposit_enabled??false;$('productDepositPrice').value=p?.deposit_price??3;$('productDepositTax').value=p?.deposit_tax_rate??19;$('productDiscountable').checked=p?.discountable??true;$('productActive').checked=p?.active??true;$('productForm').classList.remove('hidden');$('standForm').classList.add('hidden');toggleDepositFields();$('productName').focus();
 }
 function toggleDepositFields(){const enabled=$('productDeposit').checked;$('productDepositPrice').disabled=!enabled;$('productDepositTax').disabled=!enabled}
 $('productDeposit').addEventListener('change',toggleDepositFields);
@@ -157,15 +159,68 @@ function renderSettings(){const s=state.settings||{};$('merchantName').value=s.m
 $('settingsForm').addEventListener('submit',async event=>{event.preventDefault();const p_settings={merchant_name:$('merchantName').value,address_line1:$('addressLine1').value,postal_code:$('postalCode').value,city:$('city').value,vat_id:$('vatId').value,tax_number:$('taxNumber').value,receipt_note:$('receiptNote').value,system_serial:$('systemSerial').value,tse_serial:$('tseSerial').value};const {error}=await rpc('admin_save_settings',{p_settings});if(error){console.error(error);return toast('Belegdaten konnten nicht gespeichert werden')}toast('Belegdaten gespeichert');await loadState()});
 $('secretForm').addEventListener('submit',async event=>{event.preventDefault();const secret=$('newAdminSecret').value;if(secret.length<12)return toast('Mindestens 12 Zeichen verwenden');const {error}=await rpc('admin_change_secret',{p_new_secret:secret});if(error){console.error(error);return toast(error.message||'Schlüssel konnte nicht geändert werden')}$('newAdminSecret').value='';toast('Admin-Schlüssel geändert')});
 
+function localDateTimeValue(date){
+  const pad=value=>String(value).padStart(2,'0');
+  return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+'T'+pad(date.getHours())+':'+pad(date.getMinutes());
+}
+function ensureCashReportDefaults(){
+  if(!$('cashReportFrom')||!$('cashReportTo'))return;
+  if(!$('cashReportFrom').value){
+    const start=new Date();start.setHours(0,0,0,0);$('cashReportFrom').value=localDateTimeValue(start);
+  }
+  if(!$('cashReportTo').value)$('cashReportTo').value=localDateTimeValue(new Date());
+}
+function fillCashReportFilters(){
+  if(!$('cashReportStand')||!$('cashReportDevice'))return;
+  const standCurrent=$('cashReportStand').value;
+  const deviceCurrent=$('cashReportDevice').value;
+  $('cashReportStand').innerHTML='<option value="">Alle Stände</option>'+(state.stands||[]).map(s=>'<option value="'+esc(s.slug)+'">'+esc(s.name)+'</option>').join('');
+  $('cashReportDevice').innerHTML='<option value="">Alle Geräte</option>'+(state.devices||[]).map(d=>'<option value="'+esc(d.id)+'">'+esc(d.name)+'</option>').join('');
+  if([...$('cashReportStand').options].some(o=>o.value===standCurrent))$('cashReportStand').value=standCurrent;
+  if([...$('cashReportDevice').options].some(o=>o.value===deviceCurrent))$('cashReportDevice').value=deviceCurrent;
+}
+function renderCashReport(){
+  const el=$('cashReportSummary');if(!el)return;
+  if(!cashReport){el.innerHTML='<div class="summary-card"><span>KASSENSTURZ</span><strong>Keine Daten</strong></div>';return}
+  const balance=Number(cashReport.deposit_balance||0);
+  const balanceHint=balance>=0?'VOM GEZÄHLTEN BARGELD ABZIEHEN':'ZUM GEZÄHLTEN BARGELD HINZURECHNEN';
+  el.innerHTML=
+    '<div class="summary-card"><span>WARENUMSATZ</span><strong>'+euro(cashReport.merchandise_total)+'</strong></div>'+
+    '<div class="summary-card"><span>WARE · BAR</span><strong>'+euro(cashReport.cash_merchandise)+'</strong></div>'+
+    '<div class="summary-card"><span>WARE · KARTE</span><strong>'+euro(cashReport.card_merchandise)+'</strong></div>'+
+    '<div class="summary-card"><span>PFAND EINGENOMMEN · BAR</span><strong>'+euro(cashReport.deposit_collected)+'</strong></div>'+
+    '<div class="summary-card"><span>PFAND AUSGEZAHLT · BAR</span><strong>'+euro(cashReport.deposit_paid_out)+'</strong></div>'+
+    '<div class="summary-card deposit-balance"><span>PFANDBESTAND · '+balanceHint+'</span><strong>'+euro(Math.abs(balance))+'</strong></div>'+
+    '<div class="summary-card"><span>BARGELDBEWEGUNG INKL. PFAND</span><strong>'+euro(cashReport.cash_drawer_movement)+'</strong></div>';
+}
+async function loadCashReport(){
+  if(!$('cashReportFrom')||!$('cashReportTo')||!adminToken())return;
+  ensureCashReportDefaults();
+  const from=new Date($('cashReportFrom').value),to=new Date($('cashReportTo').value);
+  if(!Number.isFinite(from.getTime())||!Number.isFinite(to.getTime())||to<=from){toast('Zeitraum für Kassensturz prüfen');return}
+  $('cashReportSummary').innerHTML='<div class="summary-card"><span>KASSENSTURZ</span><strong>Wird berechnet …</strong></div>';
+  const {data,error}=await db.functions.invoke('admin-cash-report',{body:{
+    admin_token:adminToken(),
+    from:from.toISOString(),
+    to:to.toISOString(),
+    stand:$('cashReportStand').value||null,
+    device_id:$('cashReportDevice').value||null
+  }});
+  if(error||data?.error){console.error(error||data?.error);cashReport=null;renderCashReport();toast(data?.error||'Kassensturz konnte nicht berechnet werden');return}
+  cashReport=data;renderCashReport();
+}
+$('cashReportForm').addEventListener('submit',async event=>{event.preventDefault();await loadCashReport()});
+$('cashReportToday').addEventListener('click',async()=>{
+  const start=new Date();start.setHours(0,0,0,0);
+  $('cashReportFrom').value=localDateTimeValue(start);$('cashReportTo').value=localDateTimeValue(new Date());
+  await loadCashReport();
+});
+
 function renderSales(){
   const tx=state.transactions||[];
-  const revenue=tx.reduce((s,t)=>s+Number(t.amount||0),0);
-  const cash=tx.filter(t=>t.payment_method==='cash').reduce((s,t)=>s+Number(t.amount||0),0);
-  const card=tx.filter(t=>t.payment_method==='card').reduce((s,t)=>s+Number(t.amount||0),0);
-  $('salesSummary').innerHTML='<div class="summary-card"><span>NETTO UMSATZ</span><strong>'+euro(revenue)+'</strong></div><div class="summary-card"><span>BAR</span><strong>'+euro(cash)+'</strong></div><div class="summary-card"><span>KARTE</span><strong>'+euro(card)+'</strong></div>';
   $('salesRows').innerHTML=tx.map(t=>{
     const kind=t.kind==='refund'?'Rückerstattung':t.status==='cancelled'?'Storno':'Verkauf';
-    const pay=t.payment_method==='cash'?'Bar':t.payment_method==='card'?'Karte':'–';
+    const pay=t.payment_method==='cash'?'Bar':t.payment_method==='card'?'Karte · Pfand ggf. bar':'–';
     const status=t.status==='completed'?'Abgeschlossen':t.status==='refunded'?'Erstattet':'Storniert';
     return '<tr><td>'+esc(fmt(t.created_at))+'</td><td>'+esc(t.reference)+'</td><td>'+kind+'</td><td>'+esc(t.cashier||'–')+'</td><td>'+esc(t.device||'–')+'</td><td>'+esc(t.stand||'–')+'</td><td>'+pay+'</td><td>'+status+(t.synced_from_offline?' · offline sync':'')+'</td><td>'+euro(t.amount)+'</td></tr>';
   }).join('')||'<tr><td colspan="9">Noch keine Vorgänge.</td></tr>';
