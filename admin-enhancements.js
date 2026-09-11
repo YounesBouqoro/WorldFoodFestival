@@ -109,3 +109,58 @@
   document.getElementById('cashReportTo')?.addEventListener('change',()=>setTimeout(()=>{restoreInputs();renderReconciliation()},0));
   renderEnhanced();
 })();
+
+(() => {
+  let analysisSort='bestseller';
+  const STYLE_ID='wff-analysis-sort-style';
+
+  function addStyles(){
+    if(document.getElementById(STYLE_ID))return;
+    const style=document.createElement('style');style.id=STYLE_ID;
+    style.textContent=`
+      .wff-analysis-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0 14px}
+      .wff-analysis-controls>span{font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.05em;opacity:.6;margin-right:2px}
+      .wff-analysis-sort{min-height:38px;border:2px solid #161616;border-radius:999px;background:#f7f4ec;color:#161616;padding:7px 12px;font-weight:900;cursor:pointer}
+      .wff-analysis-sort.active{background:#e6d634;box-shadow:2px 2px 0 #161616}
+      .wff-analysis-rank{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:999px;background:#eee;border:1.5px solid #161616;font-size:10px;font-weight:1000;margin-right:7px}
+      .wff-analysis-rank.top{background:#e6d634}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function buildControls(){
+    const panel=document.querySelector('.admin-panel[data-panel="analysis"]');if(!panel)return;
+    if(panel.querySelector('.wff-analysis-controls'))return;
+    const heading=panel.querySelector('.panel-heading');if(!heading)return;
+    const controls=document.createElement('div');controls.className='wff-analysis-controls';
+    controls.innerHTML='<span>Sortieren nach</span><button class="wff-analysis-sort active" data-analysis-sort="bestseller" type="button">🏆 Bestseller</button><button class="wff-analysis-sort" data-analysis-sort="revenue" type="button">💶 Umsatz</button>';
+    heading.insertAdjacentElement('afterend',controls);
+    controls.querySelectorAll('[data-analysis-sort]').forEach(button=>button.addEventListener('click',()=>{
+      analysisSort=button.dataset.analysisSort;
+      controls.querySelectorAll('[data-analysis-sort]').forEach(b=>b.classList.toggle('active',b===button));
+      renderSortedAnalysis();
+    }));
+  }
+
+  function sortedRows(){
+    const rows=[...(state?.product_analysis||[])];
+    if(analysisSort==='revenue')return rows.sort((a,b)=>Number(b.product_revenue||0)-Number(a.product_revenue||0)||Number(b.net_qty||0)-Number(a.net_qty||0));
+    return rows.sort((a,b)=>Number(b.net_qty||0)-Number(a.net_qty||0)||Number(b.product_revenue||0)-Number(a.product_revenue||0));
+  }
+
+  function renderSortedAnalysis(){
+    buildControls();
+    const rows=sortedRows();
+    const qty=rows.reduce((s,r)=>s+Number(r.net_qty||0),0);
+    const refunded=rows.reduce((s,r)=>s+Number(r.refunded_qty||0),0);
+    const revenue=rows.reduce((s,r)=>s+Number(r.product_revenue||0),0);
+    const summary=document.getElementById('analysisSummary');
+    const body=document.getElementById('analysisRows');
+    if(summary)summary.innerHTML='<div class="summary-card"><span>NETTO STÜCK</span><strong>'+qty+'</strong></div><div class="summary-card"><span>ERSTATTET</span><strong>'+refunded+'</strong></div><div class="summary-card"><span>PRODUKTUMSATZ</span><strong>'+euro(revenue)+'</strong></div>';
+    if(body)body.innerHTML=rows.map((r,index)=>'<tr><td><span class="wff-analysis-rank '+(index<3?'top':'')+'">'+(index+1)+'</span>'+esc(r.product_name)+'</td><td>'+esc(r.stand_name||r.stand_slug)+'</td><td>'+esc(r.category)+'</td><td>'+Number(r.sold_qty||0)+'</td><td>'+Number(r.refunded_qty||0)+'</td><td><strong>'+Number(r.net_qty||0)+'</strong></td><td><strong>'+euro(r.product_revenue)+'</strong></td></tr>').join('')||'<tr><td colspan="7">Noch keine Verkäufe.</td></tr>';
+  }
+
+  addStyles();buildControls();
+  if(typeof renderAnalysis==='function')renderAnalysis=renderSortedAnalysis;
+  renderSortedAnalysis();
+})();
