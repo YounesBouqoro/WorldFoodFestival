@@ -270,3 +270,16 @@
 
   updateInstallUi();
 })();
+
+(() => {
+  const path = document.getElementById('productGroups')
+    ? './pos-enhancements.js?v=20260912-1'
+    : document.getElementById('cashReportSummary')
+      ? './admin-enhancements.js?v=20260912-1'
+      : null;
+  if (!path) return;
+  const script = document.createElement('script');
+  script.src = path;
+  script.async = false;
+  document.body.appendChild(script);
+})();
